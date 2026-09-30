@@ -6,7 +6,6 @@ import Logo from "@/components/logo.tsx";
 import { useLang } from "@/components/providers/lang.tsx";
 import { useSettings } from "@/components/providers/settings.tsx";
 import { cn } from "@/lib/utils.ts";
-import ThemePicker from "./theme-picker.tsx";
 
 export function Brand({ className, nameClassName }: { className?: string; nameClassName?: string }) {
   const s = useSettings();
@@ -18,7 +17,7 @@ export function Brand({ className, nameClassName }: { className?: string; nameCl
   );
 }
 
-// Language, theme and cart buttons shared by every navigation style
+// Language and cart buttons shared by every navigation style (the theme button floats separately)
 export function HeaderActions() {
   const { lang, setLang } = useLang();
   return (
@@ -26,7 +25,6 @@ export function HeaderActions() {
       <Button size="sm" variant="secondary" onClick={() => setLang(lang === "en" ? "ar" : "en")}>
         <Languages className="size-4" />{lang === "en" ? "العربية" : "EN"}
       </Button>
-      <ThemePicker />
       <CartDrawer />
     </div>
   );
