@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label.tsx';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx';
 import { useAdminStatus } from '@/hooks/use-admin.ts';
+import { useAdminTheme } from '@/hooks/use-admin-theme.ts';
 import BookingsTab from './_components/bookings-tab.tsx';
 import ContentTab from './_components/content-tab.tsx';
 import MenuTab from './_components/menu-tab.tsx';
@@ -16,6 +17,7 @@ import OrdersTab from './_components/orders-tab.tsx';
 import SettingsTab from './_components/settings-tab.tsx';
 
 export default function AdminPage() {
+  useAdminTheme();
   return (
     <div className="mx-auto min-h-svh max-w-6xl px-4 py-6">
       <div className="mb-6 flex items-center justify-between">
