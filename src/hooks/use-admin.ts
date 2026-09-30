@@ -1,7 +1,19 @@
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api.js";
+import { useEffect, useState } from 'react';
+import { getAdminStatus } from '@/lib/db.ts';
+import { supabase } from '@/lib/supabase.ts';
 
-// Returns undefined while loading.
+type AdminStatus = { signedIn: boolean; isAdmin: boolean; canClaim: boolean };
+
 export function useAdminStatus() {
-  return useQuery(api.admin.status, {});
+  const [status, setStatus] = useState<AdminStatus | undefined>(undefined);
+
+  useEffect(() => {
+    getAdminStatus().then(setStatus).catch(console.error);
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      getAdminStatus().then(setStatus).catch(console.error);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
+  return status;
 }

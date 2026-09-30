@@ -1,36 +1,35 @@
-import { useState } from "react";
-import { useMutation } from "convex/react";
-import { X } from "lucide-react";
-import { toast } from "sonner";
-import { api } from "@/convex/_generated/api.js";
-import { Button } from "@/components/ui/button.tsx";
-import { Input } from "@/components/ui/input.tsx";
-import { Label } from "@/components/ui/label.tsx";
-import { Textarea } from "@/components/ui/textarea.tsx";
-import ImageUpload from "@/components/image-upload.tsx";
-import { useSettings, type Settings } from "@/components/providers/settings.tsx";
+import { useState } from 'react';
+import { X } from 'lucide-react';
+import { toast } from 'sonner';
+import type { Settings } from '@/lib/db.ts';
+import { updateSettings } from '@/lib/db.ts';
+import { Button } from '@/components/ui/button.tsx';
+import { Input } from '@/components/ui/input.tsx';
+import { Label } from '@/components/ui/label.tsx';
+import { Textarea } from '@/components/ui/textarea.tsx';
+import ImageUpload from '@/components/image-upload.tsx';
+import { useSettings } from '@/components/providers/settings.tsx';
 
-type Content = Settings["content"];
+type Content = Settings['content'];
 type TextKey = { [K in keyof Content]: Content[K] extends string ? K : never }[keyof Content];
 
 const TEXTS: { key: TextKey; label: string; long?: boolean; rtl?: boolean }[] = [
-  { key: "heroTitleEn", label: "Hero title (English)" },
-  { key: "heroTitleAr", label: "Hero title (Arabic)", rtl: true },
-  { key: "heroSubtitleEn", label: "Hero subtitle (English)", long: true },
-  { key: "heroSubtitleAr", label: "Hero subtitle (Arabic)", long: true, rtl: true },
-  { key: "offerBannerEn", label: "Offer banner (English)" },
-  { key: "offerBannerAr", label: "Offer banner (Arabic)", rtl: true },
-  { key: "aboutEn", label: "About (English)", long: true },
-  { key: "aboutAr", label: "About (Arabic)", long: true, rtl: true },
-  { key: "phone", label: "Phone" },
-  { key: "whatsapp", label: "WhatsApp number" },
-  { key: "address", label: "Address" },
-  { key: "openingHours", label: "Opening hours" },
+  { key: 'heroTitleEn', label: 'Hero title (English)' },
+  { key: 'heroTitleAr', label: 'Hero title (Arabic)', rtl: true },
+  { key: 'heroSubtitleEn', label: 'Hero subtitle (English)', long: true },
+  { key: 'heroSubtitleAr', label: 'Hero subtitle (Arabic)', long: true, rtl: true },
+  { key: 'offerBannerEn', label: 'Offer banner (English)' },
+  { key: 'offerBannerAr', label: 'Offer banner (Arabic)', rtl: true },
+  { key: 'aboutEn', label: 'About (English)', long: true },
+  { key: 'aboutAr', label: 'About (Arabic)', long: true, rtl: true },
+  { key: 'phone', label: 'Phone' },
+  { key: 'whatsapp', label: 'WhatsApp number' },
+  { key: 'address', label: 'Address' },
+  { key: 'openingHours', label: 'Opening hours' },
 ];
 
 export default function ContentTab() {
   const current = useSettings();
-  const save = useMutation(api.settings.update);
   const [c, setC] = useState<Content>(current.content);
 
   return (
@@ -39,8 +38,8 @@ export default function ContentTab() {
         {TEXTS.map((t) => (
           <div key={t.key} className="space-y-1">
             <Label>{t.label}</Label>
-            {t.long ? <Textarea dir={t.rtl ? "rtl" : undefined} rows={3} value={c[t.key]} onChange={(e) => setC({ ...c, [t.key]: e.target.value })} />
-              : <Input dir={t.rtl ? "rtl" : undefined} value={c[t.key]} onChange={(e) => setC({ ...c, [t.key]: e.target.value })} />}
+            {t.long ? <Textarea dir={t.rtl ? 'rtl' : undefined} rows={3} value={c[t.key]} onChange={(e) => setC({ ...c, [t.key]: e.target.value })} />
+              : <Input dir={t.rtl ? 'rtl' : undefined} value={c[t.key]} onChange={(e) => setC({ ...c, [t.key]: e.target.value })} />}
           </div>
         ))}
       </div>
@@ -58,7 +57,7 @@ export default function ContentTab() {
         </div>
         <ImageUpload label="Add to gallery" onUploaded={(u) => setC({ ...c, gallery: [...c.gallery, u] })} />
       </div>
-      <Button size="lg" onClick={async () => { await save({ values: { ...current, content: c } }); toast.success("Content saved"); }}>Save content</Button>
+      <Button size="lg" onClick={async () => { await updateSettings({ content: c }); toast.success('Content saved'); }}>Save content</Button>
     </div>
   );
 }
