@@ -31,6 +31,8 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const primary = settings?.primary_color;
 
   useEffect(() => {
+    // The admin page applies its own fixed theme (see use-admin-theme.ts)
+    if (window.location.pathname.startsWith('/admin')) return;
     const def = getTheme(themeId);
     applyTheme(def);
     const root = document.documentElement;
