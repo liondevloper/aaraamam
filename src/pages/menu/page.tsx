@@ -1,18 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Search, Truck, UtensilsCrossed } from 'lucide-react';
 import type { Category, MenuItem } from '@/lib/db.ts';
 import { listCategories, listItems } from '@/lib/db.ts';
 import { Input } from '@/components/ui/input.tsx';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import MenuItemCard from '@/components/menu-item-card.tsx';
+import type { Channel } from '@/components/providers/cart.tsx';
+import { useCart } from '@/components/providers/cart.tsx';
 import { useLang } from '@/components/providers/lang.tsx';
 import { useSettings } from '@/components/providers/settings.tsx';
 import { cn } from '@/lib/utils.ts';
 
-export default function MenuPage({ orderMode = false }: { orderMode?: boolean }) {
+/** channel undefined = browse-only full menu. "delivery" = home order menu. "dine_in" = table order menu. */
+export default function MenuPage({ channel }: { channel?: Channel }) {
   const { t, lang } = useLang();
   const s = useSettings();
+  const cart = useCart();
+  const [sp] = useSearchParams();
   const [categories, setCategories] = useState<Category[] | undefined>(undefined);
   const [items, setItems] = useState<MenuItem[] | undefined>(undefined);
   const [q, setQ] = useState('');
@@ -23,6 +29,16 @@ export default function MenuPage({ orderMode = false }: { orderMode?: boolean })
     listItems().then(setItems).catch(console.error);
   }, []);
 
+  // QR code on the table opens /table?t=5, booking confirmation opens /table?b=BK-...
+  const qTable = sp.get('t');
+  const qBooking = sp.get('b');
+  const { setTable } = cart;
+  useEffect(() => {
+    if (channel !== 'dine_in') return;
+    if (qTable) setTable({ tableNo: qTable });
+    if (qBooking) setTable({ bookingNo: qBooking });
+  }, [channel, qTable, qBooking, setTable]);
+
   const sections = useMemo(() => {
     if (!categories || !items) return undefined;
     const term = q.trim().toLowerCase();
@@ -31,22 +47,42 @@ export default function MenuPage({ orderMode = false }: { orderMode?: boolean })
       .map((c) => ({
         cat: c,
         items: items.filter(
-          (i) => i.category_id === c.id && (!term || i.name_en.toLowerCase().includes(term) || (i.name_ar ?? '').includes(term)),
+          (i) =>
+            i.category_id === c.id &&
+            (!channel || (i.channels ?? ['dine_in', 'delivery']).includes(channel)) &&
+            (!term || i.name_en.toLowerCase().includes(term) || (i.name_ar ?? '').includes(term)),
         ),
       }))
       .filter((x) => x.items.length > 0);
-  }, [categories, items, q]);
+  }, [categories, items, q, channel]);
 
   const jump = (id: string) => {
     setActive(id);
     document.getElementById(`cat-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  const title = channel === 'dine_in' ? t('Order at Your Table', 'اطلب على طاولتك') : channel === 'delivery' ? t('Home Delivery & Pickup', 'توصيل واستلام') : t('Our Menu', 'قائمتنا');
+  const hint = channel === 'dine_in'
+    ? t('Dine-in menu. Add dishes and send the order straight to the kitchen.', 'قائمة داخل المطعم. أضف الأطباق وأرسل الطلب للمطبخ مباشرة.')
+    : channel === 'delivery'
+      ? t('Delivery menu. Add dishes, then choose delivery or pickup at checkout.', 'قائمة التوصيل. أضف الأطباق ثم اختر التوصيل أو الاستلام.')
+      : null;
+  const Icon = channel === 'dine_in' ? UtensilsCrossed : Truck;
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      <h1 className="text-3xl font-bold">{orderMode ? t('Order Online', 'اطلب الآن') : t('Our Menu', 'قائمتنا')}</h1>
-      {orderMode && <p className="mt-1 text-sm text-muted-foreground">{t('Add dishes to your cart, then choose delivery or pickup at checkout.', 'أضف الأطباق إلى السلة ثم اختر التوصيل أو الاستلام عند الدفع.')}</p>}
-      {orderMode && !s.flags.ordering && (
+      <div className="flex items-center gap-3">
+        {channel && <span className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground"><Icon className="size-5" /></span>}
+        <h1 className="text-3xl font-bold">{title}</h1>
+      </div>
+      {hint && <p className="mt-1 text-sm text-muted-foreground">{hint}</p>}
+      {channel === 'dine_in' && (cart.table.tableNo || cart.table.bookingNo) && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {cart.table.tableNo && <Badge>{t('Table', 'طاولة')} {cart.table.tableNo}</Badge>}
+          {cart.table.bookingNo && <Badge variant="secondary">{t('Booking', 'حجز')} {cart.table.bookingNo}</Badge>}
+        </div>
+      )}
+      {channel && !s.flags.ordering && (
         <p className="mt-3 rounded-lg bg-secondary p-3 text-sm">{t('Online ordering is currently closed. You can browse the menu.', 'الطلب عبر الإنترنت مغلق حاليًا. يمكنك تصفح القائمة.')}</p>
       )}
       <div className="sticky top-[61px] z-30 -mx-4 mt-4 space-y-3 border-b bg-background/95 px-4 py-3 backdrop-blur">
@@ -70,28 +106,17 @@ export default function MenuPage({ orderMode = false }: { orderMode?: boolean })
       ) : sections.length === 0 ? (
         <p className="mt-10 text-center text-muted-foreground">{t('No dishes found.', 'لا توجد أطباق.')}</p>
       ) : (
-        sections.map(({ cat, items: list }) => {
-          const withPhoto = list.filter((i) => i.image_url);
-          const plain = list.filter((i) => !i.image_url);
-          return (
-            <section key={cat.id} id={`cat-${cat.id}`} className="scroll-mt-40 pt-8">
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <h2 className="text-2xl font-bold">{lang === 'ar' && cat.name_ar ? cat.name_ar : cat.name_en}</h2>
-                {cat.time_label && <Badge variant="secondary">{cat.time_label}</Badge>}
-              </div>
-              {withPhoto.length > 0 && (
-                <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {withPhoto.map((i) => <MenuItemCard key={i.id} item={i} orderMode={orderMode} />)}
-                </div>
-              )}
-              {plain.length > 0 && (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {plain.map((i) => <MenuItemCard key={i.id} item={i} orderMode={orderMode} />)}
-                </div>
-              )}
-            </section>
-          );
-        })
+        sections.map(({ cat, items: list }) => (
+          <section key={cat.id} id={`cat-${cat.id}`} className="scroll-mt-40 pt-8">
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+              <h2 className="text-2xl font-bold">{lang === 'ar' && cat.name_ar ? cat.name_ar : cat.name_en}</h2>
+              {cat.time_label && <Badge variant="secondary">{cat.time_label}</Badge>}
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[...list.filter((i) => i.image_url), ...list.filter((i) => !i.image_url)].map((i) => <MenuItemCard key={i.id} item={i} channel={channel} />)}
+            </div>
+          </section>
+        ))
       )}
     </div>
   );
