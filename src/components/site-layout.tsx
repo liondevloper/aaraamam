@@ -28,7 +28,7 @@ export default function SiteLayout() {
   const links = [
     { to: '/', label: t('Home', 'الرئيسية') },
     { to: '/menu', label: t('Menu', 'القائمة') },
-    { to: '/order', label: t('Order', 'اطلب') },
+    { to: '/order', label: t('Home Delivery', 'توصيل للمنزل') },
     { to: '/table', label: t('Table Order', 'طلب الطاولة') },
     { to: '/book', label: t('Book a Table', 'حجز طاولة') },
     { to: '/gallery', label: t('Gallery', 'المعرض') },
@@ -94,9 +94,10 @@ export default function SiteLayout() {
         </div>
       </footer>
 
-      <div className="fixed bottom-4 left-4 z-50 flex gap-1 rounded-full border bg-card p-1 shadow-lg">
+      {/* Scrolls sideways on small screens so no theme button is cut off */}
+      <div className="fixed bottom-4 left-4 z-50 flex max-w-[calc(100vw-2rem)] gap-1 overflow-x-auto rounded-full border bg-card p-1 shadow-lg">
         {THEMES.map((th) => (
-          <button key={th.id} onClick={() => switchTheme(th.id)} className={cn('cursor-pointer rounded-full px-3 py-1 text-xs', s.theme === th.id ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary')}>{th.label}</button>
+          <button key={th.id} onClick={() => switchTheme(th.id)} className={cn('shrink-0 cursor-pointer whitespace-nowrap rounded-full px-3 py-1 text-xs', s.theme === th.id ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary')}>{th.label}</button>
         ))}
       </div>
     </div>
