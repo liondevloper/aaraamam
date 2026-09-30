@@ -160,14 +160,14 @@ export const THEMES: ThemeDef[] = [
 
 // ── Admin panel themes ───────────────────────────────────────────────────────
 // The admin panel never follows the visitor theme above. Admins pick one of these
-// two premium looks instead (persisted locally per browser/device).
-export type AdminLayoutId = "classic" | "midnight";
+// premium looks instead (persisted locally per browser/device).
+export type AdminLayoutId = "classic" | "midnight" | "emerald";
 
 export type AdminThemeDef = {
   id: AdminLayoutId;
   label: string;
   description: string;
-  /** Structural chrome, not just colors: "topnav" (classic) or "sidebar" (midnight) */
+  /** Structural chrome, not just colors: "topnav" (classic/emerald) or "sidebar" (midnight) */
   nav: "topnav" | "sidebar";
   font: string;
   vars: Record<string, string>;
@@ -229,6 +229,35 @@ export const ADMIN_THEMES: AdminThemeDef[] = [
       "--border": "oklch(0.78 0.13 85 / 16%)",
       "--input": "oklch(0.78 0.13 85 / 20%)",
       "--ring": "oklch(0.78 0.13 85)",
+    },
+  },
+  {
+    // Premium: crisp emerald and ivory dashboard with a top bar, calm and airy
+    id: "emerald",
+    label: "Emerald Coast",
+    description: "Premium light dashboard with emerald accents",
+    nav: "topnav",
+    font: "'Manrope', ui-sans-serif, system-ui, sans-serif",
+    vars: {
+      "--radius": "0.9rem",
+      "--background": "oklch(0.98 0.012 165)",
+      "--foreground": "oklch(0.22 0.04 165)",
+      "--card": "oklch(1 0.004 165)",
+      "--card-foreground": "oklch(0.22 0.04 165)",
+      "--popover": "oklch(1 0.004 165)",
+      "--popover-foreground": "oklch(0.22 0.04 165)",
+      "--primary": "oklch(0.4 0.1 165)",
+      "--primary-foreground": "oklch(0.98 0.01 165)",
+      "--secondary": "oklch(0.94 0.03 165)",
+      "--secondary-foreground": "oklch(0.28 0.06 165)",
+      "--muted": "oklch(0.95 0.02 165)",
+      "--muted-foreground": "oklch(0.5 0.03 165)",
+      "--accent": "oklch(0.78 0.14 85)",
+      "--accent-foreground": "oklch(0.22 0.06 85)",
+      "--destructive": "oklch(0.577 0.245 27.325)",
+      "--border": "oklch(0.9 0.02 165)",
+      "--input": "oklch(0.9 0.02 165)",
+      "--ring": "oklch(0.4 0.1 165)",
     },
   },
 ];
