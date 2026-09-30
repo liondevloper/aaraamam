@@ -1,41 +1,24 @@
-import { useEffect, useState } from 'react';
-import { Copy, MapPin, MessageCircle, Phone, Power } from 'lucide-react';
+import { useState } from 'react';
+import { Copy, MapPin, MessageCircle, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import type { Order } from '@/lib/db.ts';
 import { assignRider, setOrderStatus } from '@/lib/db.ts';
+import { errMsg } from '@/lib/errors.ts';
+import { ACTIVE_STATUSES as ACTIVE, DONE_STATUSES as DONE } from '@/lib/orders.ts';
 import { Badge } from '@/components/ui/badge.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx';
-import { useOrdersLive } from '@/hooks/use-orders-live.ts';
-import { useRing } from '@/hooks/use-ring.ts';
 import { mapsLink, money } from '@/lib/format.ts';
 
 type Status = Order['status'];
-const ACTIVE: Status[] = ['accepted', 'preparing', 'out_for_delivery', 'ready'];
-const DONE: Status[] = ['delivered', 'rejected', 'cancelled'];
 const TYPE_LABEL: Record<Order['order_type'], string> = { delivery: 'Delivery', pickup: 'Pickup', dine_in: 'Table' };
 type TypeFilter = 'all' | Order['order_type'];
 
-function errMsg(e: unknown): string {
-  return e && typeof e === 'object' && 'message' in e && typeof e.message === 'string' ? e.message : 'Something went wrong';
-}
-
-export default function OrdersTab() {
-  const orders = useOrdersLive();
+export default function OrdersTab({ orders }: { orders: Order[] | undefined }) {
   const [tab, setTab] = useState('new');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
-  const [shift, setShift] = useState(false);
-  const hasNew = orders?.some((o) => o.status === 'new') ?? false;
-  const unlock = useRing(hasNew, shift);
-
-  useEffect(() => {
-    if (!shift || !('wakeLock' in navigator)) return;
-    let lock: WakeLockSentinel | null = null;
-    (navigator as Navigator & { wakeLock: { request: (t: string) => Promise<WakeLockSentinel> } }).wakeLock.request('screen').then((l) => { lock = l; }).catch(() => undefined);
-    return () => { void lock?.release(); };
-  }, [shift]);
 
   const byStatus = (o: Order) => (tab === 'new' ? o.status === 'new' : tab === 'active' ? ACTIVE.includes(o.status) : DONE.includes(o.status));
   const list = orders?.filter((o) => byStatus(o) && (typeFilter === 'all' || o.order_type === typeFilter)) ?? [];
@@ -43,12 +26,6 @@ export default function OrdersTab() {
 
   return (
     <div className="space-y-4">
-      {!shift ? (
-        <Button size="lg" onClick={() => { unlock(); setShift(true); }}><Power className="size-4" />Start Shift (enable sound)</Button>
-      ) : (
-        <p className="text-sm text-muted-foreground">Shift running. A loud ring plays while any order is new.</p>
-      )}
-      {hasNew && !shift && <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">New order waiting. Press Start Shift to hear the alert.</p>}
       <div className="flex flex-wrap gap-3">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList>
@@ -66,7 +43,7 @@ export default function OrdersTab() {
           </TabsList>
         </Tabs>
       </div>
-      {orders === undefined ? <p>Loading...</p> : list.length === 0 ? <p className="text-muted-foreground">No orders here.</p> : (
+      {orders === undefined ? <p>Loading...</p> : list.length === 0 ? <p className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">No orders here.</p> : (
         <div className="grid gap-4 lg:grid-cols-2">{list.map((o) => <OrderCard key={o.id} o={o} />)}</div>
       )}
     </div>
@@ -74,7 +51,7 @@ export default function OrdersTab() {
 }
 
 function OrderCard({ o }: { o: Order }) {
-  const go = (status: Status) => void setOrderStatus(o.id, status).then(() => toast.success(`${o.order_no}: ${status.replace(/_/g, ' ')}`)).catch((e) => toast.error(errMsg(e)));
+  const go = (status: Status) => void setOrderStatus(o.id, status).then(() => toast.success(`${o.order_no}: ${status.replace(/_/g, ' ')}`)).catch((e: unknown) => toast.error(errMsg(e)));
   const [rn, setRn] = useState(o.rider_name ?? '');
   const [rp, setRp] = useState(o.rider_phone ?? '');
   const [riderToken, setRiderToken] = useState(o.rider_token ?? '');
@@ -92,7 +69,7 @@ function OrderCard({ o }: { o: Order }) {
   };
 
   return (
-    <div className="space-y-3 rounded-xl border bg-card p-4">
+    <div className={o.status === 'new' ? 'space-y-3 rounded-xl border-2 border-primary bg-card p-4' : 'space-y-3 rounded-xl border bg-card p-4'}>
       <div className="flex items-center justify-between gap-2">
         <div>
           <p className="text-lg font-bold">{o.order_no}</p>
