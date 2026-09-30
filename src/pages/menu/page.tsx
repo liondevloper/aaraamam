@@ -7,16 +7,19 @@ import { Input } from '@/components/ui/input.tsx';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 import MenuItemCard from '@/components/menu-item-card.tsx';
+import SectionTitle from '@/components/section-title.tsx';
 import type { Channel } from '@/components/providers/cart.tsx';
 import { useCart } from '@/components/providers/cart.tsx';
 import { useLang } from '@/components/providers/lang.tsx';
 import { useSettings } from '@/components/providers/settings.tsx';
+import { getLook } from '@/lib/theme-look.ts';
 import { cn } from '@/lib/utils.ts';
 
 /** channel undefined = browse-only full menu. "delivery" = home order menu. "dine_in" = table order menu. */
 export default function MenuPage({ channel }: { channel?: Channel }) {
   const { t, lang } = useLang();
   const s = useSettings();
+  const look = getLook(s.theme);
   const cart = useCart();
   const [sp] = useSearchParams();
   const [categories, setCategories] = useState<Category[] | undefined>(undefined);
@@ -68,16 +71,17 @@ export default function MenuPage({ channel }: { channel?: Channel }) {
       ? t('Delivery menu. Add dishes, then choose delivery or pickup at checkout.', 'قائمة التوصيل. أضف الأطباق ثم اختر التوصيل أو الاستلام.')
       : null;
   const Icon = channel === 'dine_in' ? UtensilsCrossed : Truck;
+  const centered = look.head.includes('text-center');
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
-      <div className="flex items-center gap-3">
+      <div className={cn('flex items-center gap-3', centered && 'justify-center')}>
         {channel && <span className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground"><Icon className="size-5" /></span>}
         <h1 className="text-3xl font-bold">{title}</h1>
       </div>
-      {hint && <p className="mt-1 text-sm text-muted-foreground">{hint}</p>}
+      {hint && <p className={cn('mt-1 text-sm text-muted-foreground', look.head)}>{hint}</p>}
       {channel === 'dine_in' && (cart.table.tableNo || cart.table.bookingNo) && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className={cn('mt-3 flex flex-wrap gap-2', centered && 'justify-center')}>
           {cart.table.tableNo && <Badge>{t('Table', 'طاولة')} {cart.table.tableNo}</Badge>}
           {cart.table.bookingNo && <Badge variant="secondary">{t('Booking', 'حجز')} {cart.table.bookingNo}</Badge>}
         </div>
@@ -85,14 +89,14 @@ export default function MenuPage({ channel }: { channel?: Channel }) {
       {channel && !s.flags.ordering && (
         <p className="mt-3 rounded-lg bg-secondary p-3 text-sm">{t('Online ordering is currently closed. You can browse the menu.', 'الطلب عبر الإنترنت مغلق حاليًا. يمكنك تصفح القائمة.')}</p>
       )}
-      <div className="sticky top-[61px] z-30 -mx-4 mt-4 space-y-3 border-b bg-background/95 px-4 py-3 backdrop-blur">
+      <div className={cn('sticky z-30 -mx-4 mt-4 space-y-3 border-b bg-background/95 px-4 py-3 backdrop-blur', look.stickyTop)}>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('Search dishes', 'ابحث عن طبق')} className="pl-9" />
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className={cn('flex gap-2 overflow-x-auto pb-1', centered && 'sm:justify-center')}>
           {sections?.map(({ cat }) => (
-            <button key={cat.id} onClick={() => jump(cat.id)} className={cn('shrink-0 cursor-pointer rounded-full border px-3 py-1.5 text-sm', active === cat.id ? 'border-primary bg-primary text-primary-foreground' : 'bg-card hover:bg-secondary')}>
+            <button key={cat.id} onClick={() => jump(cat.id)} className={cn('shrink-0 cursor-pointer', look.chip, active === cat.id && look.chipActive)}>
               {lang === 'ar' && cat.name_ar ? cat.name_ar : cat.name_en}
             </button>
           ))}
@@ -108,11 +112,11 @@ export default function MenuPage({ channel }: { channel?: Channel }) {
       ) : (
         sections.map(({ cat, items: list }) => (
           <section key={cat.id} id={`cat-${cat.id}`} className="scroll-mt-40 pt-8">
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <h2 className="text-2xl font-bold">{lang === 'ar' && cat.name_ar ? cat.name_ar : cat.name_en}</h2>
+            <div className={cn('mb-4 flex flex-wrap items-center gap-3', centered && 'justify-center')}>
+              <SectionTitle className={centered ? 'w-full' : undefined}>{lang === 'ar' && cat.name_ar ? cat.name_ar : cat.name_en}</SectionTitle>
               {cat.time_label && <Badge variant="secondary">{cat.time_label}</Badge>}
             </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className={look.grid}>
               {[...list.filter((i) => i.image_url), ...list.filter((i) => !i.image_url)].map((i) => <MenuItemCard key={i.id} item={i} channel={channel} />)}
             </div>
           </section>
