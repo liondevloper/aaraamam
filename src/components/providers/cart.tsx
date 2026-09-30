@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 /** Which menu the cart belongs to. Dine-in and delivery menus are separate, so the cart never mixes them. */
 export type Channel = "delivery" | "dine_in";
@@ -48,6 +48,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
+  // Stable identity: used inside effects, and skips no-op updates to avoid render loops
+  const setTable = useCallback((t: Partial<TableInfo>) => {
+    setState((prev) => {
+      const next = { ...prev.table, ...t };
+      if (next.tableNo === prev.table.tableNo && next.bookingNo === prev.table.bookingNo) return prev;
+      return { ...prev, table: next };
+    });
+  }, []);
+
   const value = useMemo<Ctx>(() => {
     const { lines } = state;
     return {
@@ -75,10 +84,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
               ? prev.lines.filter((l) => l.key !== key)
               : prev.lines.map((l) => (l.key === key ? { ...l, qty: Math.min(50, qty) } : l)),
         })),
-      setTable: (t) => setState((prev) => ({ ...prev, table: { ...prev.table, ...t } })),
+      setTable,
       clear: () => setState((prev) => ({ ...prev, lines: [] })),
     };
-  }, [state]);
+  }, [state, setTable]);
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
