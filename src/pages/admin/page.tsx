@@ -16,6 +16,8 @@ import MenuTab from './_components/menu-tab.tsx';
 import OrdersTab from './_components/orders-tab.tsx';
 import SettingsTab from './_components/settings-tab.tsx';
 
+const LION_LOGO = 'https://hercules-cdn.com/file_YhLYv39scgdutD2CYKbozlog';
+
 export default function AdminPage() {
   useAdminTheme();
   return (
@@ -48,47 +50,47 @@ function Gate() {
   if (status.isAdmin) return <Dashboard />;
   if (!status.signedIn) {
     return (
-      <div className="mx-auto max-w-sm space-y-5 rounded-xl border bg-card p-8">
-        <p className="text-center font-semibold">Sign in to manage the restaurant</p>
-
-        {/* Email / Password login */}
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <Label>Email</Label>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
+      <div className="flex min-h-[70vh] items-center justify-center">
+        <div className="w-full max-w-sm space-y-5 rounded-2xl border bg-card p-8 shadow-sm">
+          {/* Lion Developer Logo */}
+          <div className="flex justify-center">
+            <img
+              src={LION_LOGO}
+              alt="Lion Developer"
+              className="h-28 w-28 object-contain"
             />
           </div>
-          <div className="space-y-1">
-            <Label>Password</Label>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              onKeyDown={(e) => e.key === 'Enter' && void signInEmail()}
-            />
+
+          <p className="text-center font-semibold text-lg">Sign in to manage the restaurant</p>
+
+          {/* Email / Password login */}
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Password</Label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                onKeyDown={(e) => e.key === 'Enter' && void signInEmail()}
+              />
+            </div>
+            <Button className="w-full" disabled={loading || !email || !password} onClick={() => void signInEmail()}>
+              {loading ? 'Signing in…' : 'Sign in'}
+            </Button>
           </div>
-          <Button className="w-full" disabled={loading || !email || !password} onClick={() => void signInEmail()}>
-            {loading ? 'Signing in…' : 'Sign in'}
-          </Button>
-        </div>
 
-        <div className="relative flex items-center gap-3 text-xs text-muted-foreground">
-          <div className="flex-1 border-t" />or<div className="flex-1 border-t" />
+          <p className="text-center text-xs text-muted-foreground">Made by Lion Developer</p>
         </div>
-
-        {/* Google login */}
-        <Button
-          variant="secondary"
-          className="w-full"
-          onClick={() => void supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } })}
-        >
-          Sign in with Google
-        </Button>
       </div>
     );
   }
