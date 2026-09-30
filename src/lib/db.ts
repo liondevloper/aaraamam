@@ -3,6 +3,7 @@
  * All components import from here so swapping the backend is one file.
  */
 import { supabase } from './supabase.ts';
+import type { StoreConfig } from './store.ts';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -144,6 +145,8 @@ export type Settings = {
     aboutImage: string;
     gallery: string[];
   };
+  /** Live shift / timetable / maintenance state. Only change it through updateStore(). */
+  store: StoreConfig;
 };
 
 export type SettingsPrivate = {
@@ -219,7 +222,7 @@ export async function deleteItem(id: string): Promise<void> {
 
 // ── Orders ──────────────────────────────────────────────────────────────────
 
-/** Prices, promo and fee are computed server-side in the `place_order` RPC so customers cannot tamper with totals. */
+/** Prices, promo, fee and open/closed state are checked server-side in the `place_order` RPC. */
 export async function placeOrder(params: {
   orderType: OrderType;
   items: { slug: string; variantLabel?: string; qty: number }[];
@@ -384,8 +387,15 @@ export async function getSettings(): Promise<Settings> {
   return data;
 }
 
-export async function updateSettings(values: Partial<Settings>): Promise<void> {
+/** `store` is left out on purpose: it is changed only through updateStore(). */
+export async function updateSettings(values: Partial<Omit<Settings, 'store'>>): Promise<void> {
   const { error } = await supabase.from('settings').update(values).eq('id', 1);
+  if (error) throw error;
+}
+
+/** Merges into settings.store on the server, so two admins never overwrite each other. */
+export async function updateStore(patch: Partial<StoreConfig>): Promise<void> {
+  const { error } = await supabase.rpc('update_store', { p_patch: patch });
   if (error) throw error;
 }
 

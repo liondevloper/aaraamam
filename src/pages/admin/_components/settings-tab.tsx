@@ -3,11 +3,12 @@ import { toast } from 'sonner';
 import { Trash2 } from 'lucide-react';
 import type { Settings, SettingsPrivate, Promo } from '@/lib/db.ts';
 import { createPromo, deletePromo, getSettingsPrivate, listPromos, sendTelegramTest, setPromoActive, updateSettings, updateSettingsPrivate } from '@/lib/db.ts';
+import { errMsg } from '@/lib/errors.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
-import { useSettings } from '@/components/providers/settings.tsx';
+import { useRefreshSettings, useSettings } from '@/components/providers/settings.tsx';
 import { THEMES } from '@/lib/themes.ts';
 import { cn } from '@/lib/utils.ts';
 
@@ -19,12 +20,24 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function SettingsTab() {
   const current = useSettings();
+  const refresh = useRefreshSettings();
   const [s, setS] = useState<Settings>(current);
+  const [saving, setSaving] = useState(false);
   const num = (v: string) => Number(v) || 0;
 
   const submit = async () => {
-    await updateSettings(s);
-    toast.success('Settings saved');
+    setSaving(true);
+    try {
+      // Never send `store` (shift / maintenance) from here, or an old copy would undo live changes
+      const { store: _store, ...rest } = s;
+      await updateSettings(rest);
+      await refresh();
+      toast.success('Settings saved');
+    } catch (e) {
+      toast.error(errMsg(e, 'Could not save settings'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -40,6 +53,7 @@ export default function SettingsTab() {
       </Block>
 
       <Block title="Switches">
+        <p className="text-sm text-muted-foreground">Shift open/close, opening timetable and maintenance are at the top of the admin panel.</p>
         <div className="grid gap-3 sm:grid-cols-2">
           {(Object.keys(FLAG_LABELS) as (keyof Settings['flags'])[]).map((k) => (
             <label key={k} className="flex items-center gap-2 text-sm"><Switch checked={s.flags[k]} onCheckedChange={(c) => setS({ ...s, flags: { ...s.flags, [k]: c } })} />{FLAG_LABELS[k]}</label>
@@ -74,7 +88,7 @@ export default function SettingsTab() {
         </div>
       </Block>
 
-      <Button size="lg" onClick={() => void submit()}>Save settings</Button>
+      <Button size="lg" disabled={saving} onClick={() => void submit()}>{saving ? 'Saving…' : 'Save settings'}</Button>
       <TelegramBlock />
       <PromoBlock />
     </div>
