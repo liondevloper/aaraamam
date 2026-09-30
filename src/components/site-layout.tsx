@@ -28,7 +28,7 @@ export default function SiteLayout() {
   const links = [
     { to: '/', label: t('Home', 'الرئيسية') },
     { to: '/menu', label: t('Menu', 'القائمة') },
-    { to: '/order', label: t('Home Delivery', 'توصيل للمنزل') },
+    { to: '/order', label: t('Order', 'اطلب') },
     { to: '/table', label: t('Table Order', 'طلب الطاولة') },
     { to: '/book', label: t('Book a Table', 'حجز طاولة') },
     { to: '/gallery', label: t('Gallery', 'المعرض') },
