@@ -19,6 +19,8 @@ export type Category = {
   active: boolean;
 };
 
+export type MenuChannel = 'dine_in' | 'delivery';
+
 export type MenuItem = {
   id: string;
   created_at: string;
@@ -34,15 +36,20 @@ export type MenuItem = {
   available: boolean;
   popular: boolean;
   sort: number;
+  /** Which menus show this dish: table (dine_in) and/or home (delivery + pickup). */
+  channels: MenuChannel[];
 };
 
 export type OrderItem = { name: string; variantLabel?: string; qty: number; unitPrice: number };
 
+export type OrderType = 'delivery' | 'pickup' | 'dine_in';
+
 export type Order = {
   id: string;
   created_at: string;
+  updated_at: string;
   order_no: string;
-  order_type: 'delivery' | 'pickup';
+  order_type: OrderType;
   status: 'new' | 'accepted' | 'preparing' | 'out_for_delivery' | 'ready' | 'delivered' | 'rejected' | 'cancelled';
   customer_name: string | null;
   customer_phone: string;
@@ -61,6 +68,8 @@ export type Order = {
   rider_phone: string | null;
   rider_lat: number | null;
   rider_lng: number | null;
+  table_no: string | null;
+  booking_no: string | null;
 };
 
 export type Booking = {
@@ -212,30 +221,32 @@ export async function deleteItem(id: string): Promise<void> {
 
 /** Prices, promo and fee are computed server-side in the `place_order` RPC so customers cannot tamper with totals. */
 export async function placeOrder(params: {
-  orderType: 'delivery' | 'pickup';
+  orderType: OrderType;
   items: { slug: string; variantLabel?: string; qty: number }[];
   customerName?: string;
-  customerPhone: string;
+  customerPhone?: string;
   addressText?: string;
   addressExtra?: Record<string, string>;
   lat?: number;
   lng?: number;
   promoCode?: string;
   notes?: string;
-  menuItems: MenuItem[];
-  settings: Settings;
+  tableNo?: string;
+  bookingNo?: string;
 }): Promise<{ orderNo: string; trackingToken: string }> {
   const { data, error } = await supabase.rpc('place_order', {
     p_order_type: params.orderType,
     p_items: params.items.map((l) => ({ slug: l.slug, variantLabel: l.variantLabel ?? null, qty: l.qty })),
     p_customer_name: params.customerName ?? null,
-    p_customer_phone: params.customerPhone,
+    p_customer_phone: params.customerPhone ?? null,
     p_address_text: params.addressText ?? null,
     p_address_extra: params.addressExtra ?? null,
     p_lat: params.lat ?? null,
     p_lng: params.lng ?? null,
     p_promo_code: params.promoCode ?? null,
     p_notes: params.notes ?? null,
+    p_table_no: params.tableNo ?? null,
+    p_booking_no: params.bookingNo ?? null,
   });
   if (error) throw error;
   return data as { orderNo: string; trackingToken: string };
