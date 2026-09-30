@@ -9,14 +9,17 @@ import { Calendar } from '@/components/ui/calendar.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Label } from '@/components/ui/label.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
+import PageHeading from '@/components/page-heading.tsx';
 import { useLang } from '@/components/providers/lang.tsx';
 import { useSettings } from '@/components/providers/settings.tsx';
 import { formatTime12 } from '@/lib/format.ts';
+import { getLook } from '@/lib/theme-look.ts';
 import { cn } from '@/lib/utils.ts';
 
 export default function BookPage() {
   const { t } = useLang();
   const s = useSettings();
+  const look = getLook(s.theme);
   const [date, setDate] = useState<Date | undefined>();
   const [slot, setSlot] = useState('');
   const [slots, setSlots] = useState<{ slot: string; remaining: number }[] | null>(null);
@@ -48,11 +51,11 @@ export default function BookPage() {
   if (done) {
     return (
       <div className="mx-auto max-w-md space-y-4 p-10 text-center">
-        <h1 className="text-2xl font-bold">{t('Booking received', 'تم استلام الحجز')}</h1>
+        <PageHeading>{t('Booking received', 'تم استلام الحجز')}</PageHeading>
         <p className="text-4xl font-bold text-primary">{done}</p>
         <p className="text-muted-foreground">{t('We will confirm your table shortly. Save this booking number.', 'سنؤكد طاولتك قريبًا. احتفظ برقم الحجز.')}</p>
         {s.flags.ordering && (
-          <div className="space-y-2 rounded-lg border bg-card p-4">
+          <div className={cn('space-y-2', look.panel)}>
             <p className="text-sm">{t('Want your food ready when you arrive? Pre-order from the dine-in menu.', 'تريد طعامك جاهزًا عند وصولك؟ اطلب مسبقًا من قائمة المطعم.')}</p>
             <Button asChild className="w-full"><Link to={`/table?b=${encodeURIComponent(done)}`}><UtensilsCrossed className="size-4" />{t('Pre-order for my table', 'اطلب مسبقًا لطاولتي')}</Link></Button>
           </div>
@@ -77,10 +80,10 @@ export default function BookPage() {
   return (
     <div className="mx-auto grid max-w-4xl gap-8 px-4 py-8 md:grid-cols-2">
       <div className="space-y-4">
-        <h1 className="text-3xl font-bold">{t('Book a Table', 'احجز طاولة')}</h1>
-        <Calendar mode="single" selected={date} onSelect={(d) => void selectDate(d)} disabled={[{ before: today }, { after: maxDate }]} className="rounded-lg border bg-card" />
+        <PageHeading className="mb-2">{t('Book a Table', 'احجز طاولة')}</PageHeading>
+        <Calendar mode="single" selected={date} onSelect={(d) => void selectDate(d)} disabled={[{ before: today }, { after: maxDate }]} className={cn('bg-card', look.panel)} />
       </div>
-      <div className="space-y-4 md:pt-14">
+      <div className={cn('space-y-4 md:mt-14', look.panel)}>
         <div className="space-y-2"><Label>{t('Guests', 'عدد الضيوف')}</Label><Input type="number" min={1} max={50} value={guests} onChange={(e) => setGuests(Number(e.target.value))} /></div>
         <div className="space-y-2">
           <Label>{t('Available times', 'الأوقات المتاحة')}</Label>
@@ -88,7 +91,7 @@ export default function BookPage() {
             : slots === null ? <p className="text-sm">...</p>
             : slots.length === 0 ? <p className="text-sm text-muted-foreground">{t('No times available on this date.', 'لا توجد أوقات متاحة.')}</p>
             : <div className="flex flex-wrap gap-2">{slots.map((x) => (
-                <button key={x.slot} disabled={x.remaining < guests} onClick={() => setSlot(x.slot)} className={cn('cursor-pointer rounded-md border px-3 py-1.5 text-sm disabled:cursor-not-allowed disabled:opacity-40', slot === x.slot ? 'border-primary bg-primary text-primary-foreground' : 'bg-card')}>{formatTime12(x.slot)}</button>
+                <button key={x.slot} disabled={x.remaining < guests} onClick={() => setSlot(x.slot)} className={cn('cursor-pointer disabled:cursor-not-allowed disabled:opacity-40', look.chip, slot === x.slot && look.chipActive)}>{formatTime12(x.slot)}</button>
               ))}</div>}
         </div>
         <div className="space-y-2"><Label>{t('Name', 'الاسم')}</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="John Smith" /></div>
