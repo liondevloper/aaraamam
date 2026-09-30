@@ -31,10 +31,17 @@ const LAYOUT_ICONS: Record<AdminLayoutId, typeof Sun> = {
   emerald: Sparkles,
 };
 
+// Each layout gets its own page shell so the choice changes real structure, not just colors.
+const PAGE_SHELL: Record<AdminLayoutId, string> = {
+  classic: 'mx-auto min-h-svh max-w-6xl px-4 py-6',
+  midnight: 'min-h-svh',
+  emerald: 'mx-auto min-h-svh max-w-7xl px-4 py-8',
+};
+
 export default function AdminPage() {
   const { layout, setLayout } = useAdminTheme();
   return (
-    <div className={cn(layout === 'midnight' ? 'min-h-svh' : 'mx-auto min-h-svh max-w-6xl px-4 py-6')}>
+    <div className={PAGE_SHELL[layout]}>
       <Gate layout={layout} setLayout={setLayout} />
     </div>
   );
@@ -109,7 +116,7 @@ const TABS = [
 // Compact control to flip between the premium admin looks. Choice is saved per browser.
 function LayoutSwitcher({ layout, setLayout, compact }: { layout: AdminLayoutId; setLayout: (id: AdminLayoutId) => void; compact?: boolean }) {
   return (
-    <div className={cn('flex items-center gap-1 rounded-lg border bg-secondary/60 p-1', compact && 'w-full')}>
+    <div className={cn('flex items-center gap-1 rounded-lg border bg-secondary/60 p-1', compact && 'w-full flex-col sm:flex-row')}>
       {ADMIN_THEMES.map((t) => {
         const Icon = LAYOUT_ICONS[t.id];
         return (
@@ -158,28 +165,50 @@ function Dashboard({ layout, setLayout }: { layout: AdminLayoutId; setLayout: (i
     </button>
   );
 
-  const tabsBlock = (
-    <Tabs value={tab} onValueChange={setTab}>
-      <div className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0">
-        <TabsList className="h-11">
-          {TABS.map(({ value, label, icon: Icon }) => (
-            <TabsTrigger key={value} value={value} className="gap-1.5 px-3 py-1.5">
-              <Icon className="size-4" />{label}
-              {value === 'orders' && newCount > 0 && <span className="rounded-full bg-destructive px-1.5 text-xs text-white">{newCount}</span>}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </div>
-      <div className="pt-4">
-        <TabsContent value="orders"><OrdersTab orders={orders} /></TabsContent>
-        <TabsContent value="bookings"><BookingsTab /></TabsContent>
-        <TabsContent value="menu"><MenuTab /></TabsContent>
-        <TabsContent value="settings"><SettingsTab /></TabsContent>
-        <TabsContent value="content"><ContentTab /></TabsContent>
-      </div>
-    </Tabs>
-  );
+  // ── Classic: single column, horizontal tabs up top ──────────────────────────
+  if (layout === 'classic') {
+    return (
+      <div className="space-y-6">
+        <header className="flex flex-wrap items-center gap-3">
+          <div className="mr-auto">
+            <h1 className="text-xl font-bold leading-tight">Aaraamam Admin</h1>
+            <p className="text-xs text-muted-foreground">Restaurant control panel</p>
+          </div>
+          <LayoutSwitcher layout={layout} setLayout={setLayout} />
+          {soundButton}
+          <Button asChild size="sm" variant="secondary"><Link to="/"><ExternalLink className="size-4" />View site</Link></Button>
+          <Button size="sm" variant="ghost" onClick={() => void supabase.auth.signOut()}><LogOut className="size-4" /><span className="hidden sm:inline">Sign out</span></Button>
+        </header>
 
+        {alertBanner}
+
+        <ControlCenter />
+        <StatsBar orders={orders} />
+
+        <Tabs value={tab} onValueChange={setTab}>
+          <div className="-mx-4 overflow-x-auto px-4">
+            <TabsList className="h-11">
+              {TABS.map(({ value, label, icon: Icon }) => (
+                <TabsTrigger key={value} value={value} className="gap-1.5 px-3 py-1.5">
+                  <Icon className="size-4" />{label}
+                  {value === 'orders' && newCount > 0 && <span className="rounded-full bg-destructive px-1.5 text-xs text-white">{newCount}</span>}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </div>
+          <div className="pt-4">
+            <TabsContent value="orders"><OrdersTab orders={orders} /></TabsContent>
+            <TabsContent value="bookings"><BookingsTab /></TabsContent>
+            <TabsContent value="menu"><MenuTab /></TabsContent>
+            <TabsContent value="settings"><SettingsTab /></TabsContent>
+            <TabsContent value="content"><ContentTab /></TabsContent>
+          </div>
+        </Tabs>
+      </div>
+    );
+  }
+
+  // ── Midnight Pro: fixed left sidebar nav, dark premium shell ────────────────
   if (layout === 'midnight') {
     return (
       <div className="flex min-h-svh flex-col lg:flex-row">
@@ -192,7 +221,17 @@ function Dashboard({ layout, setLayout }: { layout: AdminLayoutId; setLayout: (i
             </div>
           </div>
           <LayoutSwitcher layout={layout} setLayout={setLayout} compact />
-          <div className="flex flex-col gap-2">
+          <Tabs value={tab} onValueChange={setTab} orientation="vertical" className="w-full">
+            <TabsList className="h-auto w-full flex-col items-stretch gap-1 bg-transparent p-0">
+              {TABS.map(({ value, label, icon: Icon }) => (
+                <TabsTrigger key={value} value={value} className="w-full justify-start gap-2 px-3 py-2 data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
+                  <Icon className="size-4" />{label}
+                  {value === 'orders' && newCount > 0 && <span className="ml-auto rounded-full bg-destructive px-1.5 text-xs text-white">{newCount}</span>}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          <div className="mt-auto flex flex-col gap-2">
             {soundButton}
             <Button asChild size="sm" variant="secondary"><Link to="/"><ExternalLink className="size-4" />View site</Link></Button>
             <Button size="sm" variant="ghost" onClick={() => void supabase.auth.signOut()}><LogOut className="size-4" />Sign out</Button>
@@ -202,20 +241,26 @@ function Dashboard({ layout, setLayout }: { layout: AdminLayoutId; setLayout: (i
           {alertBanner}
           <ControlCenter />
           <StatsBar orders={orders} />
-          {tabsBlock}
+          <Tabs value={tab} onValueChange={setTab}>
+            <TabsContent value="orders"><OrdersTab orders={orders} /></TabsContent>
+            <TabsContent value="bookings"><BookingsTab /></TabsContent>
+            <TabsContent value="menu"><MenuTab /></TabsContent>
+            <TabsContent value="settings"><SettingsTab /></TabsContent>
+            <TabsContent value="content"><ContentTab /></TabsContent>
+          </Tabs>
         </main>
       </div>
     );
   }
 
+  // ── Emerald Coast: two-column dashboard, main content left + fixed insights rail right ──
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-center gap-3">
+      <header className="flex flex-wrap items-center gap-3 rounded-2xl border bg-card p-4">
         <div className="mr-auto">
           <h1 className="text-xl font-bold leading-tight">Aaraamam Admin</h1>
           <p className="text-xs text-muted-foreground">Restaurant control panel</p>
         </div>
-        <LayoutSwitcher layout={layout} setLayout={setLayout} />
         {soundButton}
         <Button asChild size="sm" variant="secondary"><Link to="/"><ExternalLink className="size-4" />View site</Link></Button>
         <Button size="sm" variant="ghost" onClick={() => void supabase.auth.signOut()}><LogOut className="size-4" /><span className="hidden sm:inline">Sign out</span></Button>
@@ -223,9 +268,37 @@ function Dashboard({ layout, setLayout }: { layout: AdminLayoutId; setLayout: (i
 
       {alertBanner}
 
-      <ControlCenter />
-      <StatsBar orders={orders} />
-      {tabsBlock}
+      <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
+        <div className="space-y-6">
+          <Tabs value={tab} onValueChange={setTab}>
+            <div className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:px-0">
+              <TabsList className="h-11 rounded-full bg-secondary/60 p-1">
+                {TABS.map(({ value, label, icon: Icon }) => (
+                  <TabsTrigger key={value} value={value} className="gap-1.5 rounded-full px-3 py-1.5">
+                    <Icon className="size-4" />{label}
+                    {value === 'orders' && newCount > 0 && <span className="rounded-full bg-destructive px-1.5 text-xs text-white">{newCount}</span>}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+            <div className="pt-4">
+              <TabsContent value="orders"><OrdersTab orders={orders} /></TabsContent>
+              <TabsContent value="bookings"><BookingsTab /></TabsContent>
+              <TabsContent value="menu"><MenuTab /></TabsContent>
+              <TabsContent value="settings"><SettingsTab /></TabsContent>
+              <TabsContent value="content"><ContentTab /></TabsContent>
+            </div>
+          </Tabs>
+        </div>
+        <aside className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+          <div className="rounded-2xl border bg-card p-4">
+            <p className="mb-3 text-sm font-semibold">Layout</p>
+            <LayoutSwitcher layout={layout} setLayout={setLayout} compact />
+          </div>
+          <StatsBar orders={orders} />
+          <ControlCenter />
+        </aside>
+      </div>
     </div>
   );
 }
