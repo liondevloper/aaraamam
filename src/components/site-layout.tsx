@@ -28,7 +28,8 @@ export default function SiteLayout() {
   const links = [
     { to: '/', label: t('Home', 'الرئيسية') },
     { to: '/menu', label: t('Menu', 'القائمة') },
-    { to: '/order', label: t('Order Online', 'اطلب الآن') },
+    { to: '/order', label: t('Home Delivery', 'توصيل للمنزل') },
+    { to: '/table', label: t('Table Order', 'طلب الطاولة') },
     { to: '/book', label: t('Book a Table', 'حجز طاولة') },
     { to: '/gallery', label: t('Gallery', 'المعرض') },
     { to: '/about', label: t('About', 'من نحن') },
@@ -44,23 +45,23 @@ export default function SiteLayout() {
             <Logo />
             <span className="text-lg font-bold leading-tight">{s.restaurant_name}</span>
           </Link>
-          <nav className="ml-auto hidden items-center gap-1 lg:flex">
+          <nav className="ml-auto hidden items-center gap-1 xl:flex">
             {links.map((l) => (
               <NavLink key={l.to} to={l.to} end={l.to === '/'} className={({ isActive }) => cn('rounded-md px-3 py-2 text-sm hover:bg-secondary', isActive && 'bg-secondary font-semibold text-primary')}>{l.label}</NavLink>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-2 lg:ml-2">
+          <div className="ml-auto flex items-center gap-2 xl:ml-2">
             <Button size="sm" variant="secondary" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}>
               <Languages className="size-4" />{lang === 'en' ? 'العربية' : 'EN'}
             </Button>
             <CartDrawer />
-            <Button size="icon" variant="secondary" className="lg:hidden" onClick={() => setOpen(!open)} aria-label="Menu">
+            <Button size="icon" variant="secondary" className="xl:hidden" onClick={() => setOpen(!open)} aria-label="Menu">
               {open ? <X className="size-4" /> : <MenuIcon className="size-4" />}
             </Button>
           </div>
         </div>
         {open && (
-          <nav className="border-t px-4 py-2 lg:hidden">
+          <nav className="border-t px-4 py-2 xl:hidden">
             {links.map((l) => (
               <NavLink key={l.to} to={l.to} end={l.to === '/'} onClick={() => setOpen(false)} className="block rounded-md px-3 py-3 text-sm hover:bg-secondary">{l.label}</NavLink>
             ))}
