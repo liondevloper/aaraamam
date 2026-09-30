@@ -52,7 +52,7 @@ function Gate() {
       <div className="flex min-h-[90vh] items-center justify-center">
         <div className="w-full max-w-sm space-y-5 rounded-2xl border bg-card p-8 shadow-sm">
           <div className="flex flex-col items-center gap-2">
-            <img src={LION_LOGO} alt="Lion Developer" className="h-44 w-44 object-contain" />
+            <img src={LION_LOGO} alt="Lion Developer" className="h-64 w-64 object-contain" />
             <h1 className="text-2xl font-bold tracking-wide">Aaraamam</h1>
           </div>
           <p className="text-center text-sm text-muted-foreground">Sign in to manage the restaurant</p>
