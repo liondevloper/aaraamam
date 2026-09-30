@@ -25,7 +25,7 @@ export default function Home() {
     listItems().then(setItems).catch(console.error);
   }, []);
 
-  const serving = cats.filter((x) => x.active && x.available_from && inWindow(x.available_from, x.available_to));
+  const serving = cats.filter((x) => x.active && x.available_from && inWindow(x.available_from, x.available_to ?? undefined));
   const popular = items.filter((i) => i.popular && i.available).slice(0, 6);
   const banner = lang === 'ar' && c.offerBannerAr ? c.offerBannerAr : c.offerBannerEn;
 
