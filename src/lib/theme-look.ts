@@ -13,6 +13,12 @@ export type Look = {
   head: string;
   // Where the sticky category bar sits under the (differently tall) header
   stickyTop: string;
+  // Boxes on order, booking, tracking and contact pages
+  panel: string;
+  // Photos on about and gallery pages
+  photo: string;
+  // Gallery layout
+  gallery: string;
 };
 
 const CHIP_IDLE = "bg-card hover:bg-secondary";
@@ -28,6 +34,9 @@ export const LOOKS: Record<string, Look> = {
     info: "flex gap-3 rounded-[var(--radius)] border bg-card p-5",
     head: "",
     stickyTop: "top-[61px]",
+    panel: "rounded-[var(--radius)] border bg-card p-4",
+    photo: "rounded-[var(--radius)]",
+    gallery: "columns-2 gap-3 md:columns-3 [&>img]:mb-3",
   },
   // Dark app-style: compact horizontal rows, square chips, bold left bars
   "theme-2": {
@@ -39,6 +48,9 @@ export const LOOKS: Record<string, Look> = {
     info: "flex gap-3 border-l-4 border-primary bg-card p-5",
     head: "",
     stickyTop: "top-[61px]",
+    panel: "border-l-4 border-primary bg-card p-4",
+    photo: "rounded-sm border-4 border-primary",
+    gallery: "grid grid-cols-2 gap-2 md:grid-cols-4 [&>img]:aspect-square",
   },
   // Editorial magazine: arched photos, centered text, double rules
   "theme-3": {
@@ -50,6 +62,9 @@ export const LOOKS: Record<string, Look> = {
     info: "flex flex-col items-center gap-2 border-2 border-double border-primary/40 p-6 text-center",
     head: "text-center",
     stickyTop: "top-[82px] xl:top-[130px]",
+    panel: "border-2 border-double border-primary/40 bg-card p-5",
+    photo: "rounded-t-full",
+    gallery: "grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 [&>img]:aspect-[3/4] [&>img]:rounded-t-full",
   },
   // Fine dining: restaurant-style menu list with dotted price leaders
   "theme-4": {
@@ -61,6 +76,9 @@ export const LOOKS: Record<string, Look> = {
     info: "flex flex-col items-center gap-2 border border-primary/40 p-6 text-center",
     head: "text-center",
     stickyTop: "top-[61px]",
+    panel: "border border-primary/40 bg-card p-5",
+    photo: "rounded-none border border-primary/60 p-1.5",
+    gallery: "grid grid-cols-2 gap-4 md:grid-cols-3 [&>img]:aspect-[4/5] [&>img]:border [&>img]:border-primary/40 [&>img]:p-1",
   },
   // Modern tiles: big rounded photos in a two-column grid with price chips
   "theme-5": {
@@ -72,6 +90,9 @@ export const LOOKS: Record<string, Look> = {
     info: "flex gap-3 rounded-[var(--radius)] bg-secondary p-5",
     head: "",
     stickyTop: "top-[61px]",
+    panel: "rounded-[var(--radius)] bg-secondary p-4",
+    photo: "rounded-[calc(var(--radius)+12px)] shadow-xl",
+    gallery: "grid grid-cols-2 gap-3 md:grid-cols-3 [&>img]:aspect-square [&>img]:rounded-[calc(var(--radius)+8px)]",
   },
 };
 
