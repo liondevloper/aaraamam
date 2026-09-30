@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button.tsx';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import MapView from '@/components/map-view.tsx';
 import { useLang } from '@/components/providers/lang.tsx';
+import { useSettings } from '@/components/providers/settings.tsx';
 import { useOrderTrack } from '@/hooks/use-order-track.ts';
 import { money } from '@/lib/format.ts';
+import { getLook } from '@/lib/theme-look.ts';
 import { cn } from '@/lib/utils.ts';
 
 const STEPS: Record<string, readonly string[]> = {
@@ -19,6 +21,8 @@ export default function TrackPage() {
   const { orderNo = '' } = useParams();
   const [sp] = useSearchParams();
   const { t } = useLang();
+  const { theme } = useSettings();
+  const look = getLook(theme);
   const order = useOrderTrack(orderNo, sp.get('t') ?? '');
 
   if (order === undefined) return <div className="mx-auto max-w-xl p-6"><Skeleton className="h-64" /></div>;
@@ -42,16 +46,17 @@ export default function TrackPage() {
   const finished = order.status === 'delivered';
   const hasRider = order.rider_lat !== null && order.rider_lng !== null;
   const updated = order.updated_at ?? order.created_at;
+  const centered = look.head.includes('text-center');
 
   return (
     <div className="mx-auto max-w-xl space-y-6 px-4 py-8">
-      <div>
+      <div className={cn(centered && 'text-center')}>
         <p className="text-sm text-muted-foreground">
           {t('Order', 'الطلب')}
           {dine && order.table_no && ` · ${t('Table', 'طاولة')} ${order.table_no}`}
         </p>
         <h1 className="text-3xl font-bold">{order.order_no}</h1>
-        <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+        <p className={cn('mt-1 flex items-center gap-1 text-xs text-muted-foreground', centered && 'justify-center')}>
           <Clock className="size-3" />{t('Placed', 'وقت الطلب')} {format(new Date(order.created_at), 'p')}
         </p>
       </div>
@@ -62,7 +67,7 @@ export default function TrackPage() {
         </p>
       ) : (
         <>
-          <div className={cn('rounded-lg p-4', finished ? 'bg-primary text-primary-foreground' : 'border bg-card')}>
+          <div className={cn(finished ? 'rounded-[var(--radius)] bg-primary p-4 text-primary-foreground' : look.panel)}>
             <p className="text-xs uppercase tracking-wide opacity-70">{t('Current status', 'الحالة الحالية')}</p>
             <p className="text-xl font-bold">{t(...labels[order.status])}</p>
             <p className="mt-1 text-xs opacity-70">{t('Last update', 'آخر تحديث')} {format(new Date(updated), 'p')}</p>
@@ -70,7 +75,7 @@ export default function TrackPage() {
           <ol className="space-y-3">
             {steps.map((st, i) => (
               <li key={st} className="flex items-center gap-3">
-                <span className={cn('flex size-7 items-center justify-center rounded-full border text-xs', i <= idx ? 'border-primary bg-primary text-primary-foreground' : 'text-muted-foreground')}>
+                <span className={cn('flex size-7 items-center justify-center border text-xs', theme === 'theme-2' || theme === 'theme-4' ? 'rounded-none' : 'rounded-full', i <= idx ? 'border-primary bg-primary text-primary-foreground' : 'text-muted-foreground')}>
                   {i <= idx ? <Check className="size-4" /> : i + 1}
                 </span>
                 <span className={cn(i === idx && 'font-bold', i > idx && 'text-muted-foreground')}>{t(...labels[st])}</span>
@@ -85,9 +90,9 @@ export default function TrackPage() {
 
       {order.status === 'out_for_delivery' && order.lat !== null && order.lng !== null && (
         <div className="space-y-2">
-          <MapView center={[order.lat, order.lng]} zoom={14} dest={[order.lat, order.lng]} rider={hasRider ? [order.rider_lat!, order.rider_lng!] : null} className="h-72 w-full rounded-lg" />
+          <MapView center={[order.lat, order.lng]} zoom={14} dest={[order.lat, order.lng]} rider={hasRider ? [order.rider_lat!, order.rider_lng!] : null} className={cn('h-72 w-full', look.photo)} />
           {order.rider_name && (
-            <div className="flex items-center justify-between rounded-lg border bg-card p-3 text-sm">
+            <div className={cn('flex items-center justify-between text-sm', look.panel)}>
               <span>{t('Rider', 'المندوب')}: {order.rider_name}</span>
               {order.rider_phone && <Button asChild size="sm" variant="secondary"><a href={`tel:${order.rider_phone}`}><Phone className="size-4" />{t('Call', 'اتصال')}</a></Button>}
             </div>
@@ -96,7 +101,7 @@ export default function TrackPage() {
         </div>
       )}
 
-      <div className="space-y-1 rounded-lg border bg-card p-4 text-sm">
+      <div className={cn('space-y-1 text-sm', look.panel)}>
         {order.items.map((l, i) => <div key={i} className="flex justify-between"><span>{l.qty} × {l.name}{l.variantLabel ? ` (${l.variantLabel})` : ''}</span><span>{money(l.qty * l.unitPrice)}</span></div>)}
         <div className="flex justify-between border-t pt-2 font-bold"><span>{t('Total', 'الإجمالي')}</span><span>{money(order.total)}</span></div>
       </div>
