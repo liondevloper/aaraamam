@@ -51,7 +51,7 @@ function Gate() {
             <img
               src={LION_LOGO}
               alt="Lion Developer"
-              className="h-28 w-28 object-contain"
+              className="h-44 w-44 object-contain"
             />
             <h1 className="text-2xl font-bold tracking-wide">Aaraamam</h1>
           </div>
