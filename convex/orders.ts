@@ -4,6 +4,7 @@ import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { requireAdmin } from "./lib/auth";
 import { haversineKm } from "./lib/geo";
+import { dubaiNow } from "./lib/time";
 import { nextNumber, randomToken } from "./lib/tokens";
 import { cartInputV, orderStatusV, orderTypeV } from "./lib/validators";
 
@@ -12,6 +13,16 @@ const fail = (code: string, message: string): never => {
 };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
+
+const FINISHED_STATUSES: ReadonlyArray<Doc<"orders">["status"]> = ["delivered", "cancelled", "rejected"];
+
+// A date-only expiry (YYYY-MM-DD) stays valid for that whole day in Dubai.
+// Comparing it directly to a full ISO timestamp expired it at midnight UTC of that day.
+function isPromoExpired(expiresAt: string | undefined): boolean {
+  if (!expiresAt) return false;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(expiresAt)) return expiresAt < dubaiNow().date;
+  return expiresAt < new Date().toISOString();
+}
 
 export const place = mutation({
   args: {
@@ -100,7 +111,7 @@ export const place = mutation({
       const code = args.promoCode.trim().toUpperCase();
       const promo = await ctx.db.query("promoCodes").withIndex("by_code", (q) => q.eq("code", code)).unique();
       if (!promo || !promo.active) return fail("BAD_REQUEST", "Invalid promo code");
-      if (promo.expiresAt && promo.expiresAt < new Date().toISOString()) return fail("BAD_REQUEST", "Promo code expired");
+      if (isPromoExpired(promo.expiresAt)) return fail("BAD_REQUEST", "Promo code expired");
       if (subtotal < promo.minOrder) return fail("BAD_REQUEST", `Promo needs a minimum of AED ${promo.minOrder}`);
       discount = promo.type === "percent" ? (subtotal * promo.value) / 100 : promo.value;
       discount = round2(Math.min(discount, subtotal));
@@ -152,7 +163,7 @@ export const quote = query({
     const code = args.code.trim().toUpperCase();
     const promo = await ctx.db.query("promoCodes").withIndex("by_code", (q) => q.eq("code", code)).unique();
     if (!promo || !promo.active) return { valid: false as const, message: "Invalid promo code" };
-    if (promo.expiresAt && promo.expiresAt < new Date().toISOString()) return { valid: false as const, message: "Promo code expired" };
+    if (isPromoExpired(promo.expiresAt)) return { valid: false as const, message: "Promo code expired" };
     if (args.subtotal < promo.minOrder) return { valid: false as const, message: `Minimum order AED ${promo.minOrder}` };
     const raw = promo.type === "percent" ? (args.subtotal * promo.value) / 100 : promo.value;
     return { valid: true as const, discount: round2(Math.min(raw, args.subtotal)) };
@@ -198,7 +209,7 @@ export const setStatus = mutation({
     await requireAdmin(ctx);
     const o = await ctx.db.get("orders", args.id);
     if (!o) return fail("NOT_FOUND", "Order not found");
-    const finished = ["delivered", "cancelled", "rejected"].includes(args.status);
+    const finished = FINISHED_STATUSES.includes(args.status);
     await ctx.db.patch("orders", args.id, {
       status: args.status,
       ...(finished
@@ -213,12 +224,16 @@ export const assignRider = mutation({
   args: { id: v.id("orders"), riderName: v.string(), riderPhone: v.string() },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
+    const o = await ctx.db.get("orders", args.id);
+    if (!o) return fail("NOT_FOUND", "Order not found");
+    // A rider link on a finished order would let the rider reopen it.
+    if (FINISHED_STATUSES.includes(o.status)) return fail("BAD_REQUEST", "This order is already finished");
+    if (o.orderType !== "delivery") return fail("BAD_REQUEST", "Riders can only be assigned to delivery orders");
+    const riderName = args.riderName.trim().slice(0, 80);
+    const riderPhone = args.riderPhone.trim().slice(0, 20);
+    if (!riderName || !riderPhone) return fail("BAD_REQUEST", "Enter the rider name and phone");
     const token = randomToken();
-    await ctx.db.patch("orders", args.id, {
-      riderName: args.riderName.trim(),
-      riderPhone: args.riderPhone.trim(),
-      riderToken: token,
-    });
+    await ctx.db.patch("orders", args.id, { riderName, riderPhone, riderToken: token });
     return token;
   },
 });
