@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Motorbike, Search, UtensilsCrossed } from 'lucide-react';
 import type { Category, MenuItem } from '@/lib/db.ts';
 import { listCategories, listItems } from '@/lib/db.ts';
+import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
@@ -24,13 +25,26 @@ export default function MenuPage({ channel }: { channel?: Channel }) {
   const [sp] = useSearchParams();
   const [categories, setCategories] = useState<Category[] | undefined>(undefined);
   const [items, setItems] = useState<MenuItem[] | undefined>(undefined);
+  const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState('');
   const [active, setActive] = useState<string | null>(null);
 
+  const load = useCallback(() => {
+    setError(null);
+    Promise.all([listCategories(), listItems()])
+      .then(([c, i]) => {
+        setCategories(c);
+        setItems(i);
+      })
+      .catch((e: unknown) => {
+        console.error(e);
+        setError(e instanceof Error ? e.message : t('Could not load the menu', 'تعذر تحميل القائمة'));
+      });
+  }, [t]);
+
   useEffect(() => {
-    listCategories().then(setCategories).catch(console.error);
-    listItems().then(setItems).catch(console.error);
-  }, []);
+    load();
+  }, [load]);
 
   // QR code on the table opens /table?t=5, booking confirmation opens /table?b=BK-...
   const qTable = sp.get('t');
@@ -103,7 +117,13 @@ export default function MenuPage({ channel }: { channel?: Channel }) {
         </div>
       </div>
 
-      {sections === undefined ? (
+      {error ? (
+        <div className="mt-10 space-y-3 text-center">
+          <p className="font-medium">{t('The menu could not be loaded.', 'تعذر تحميل القائمة.')}</p>
+          <details className="text-xs text-muted-foreground"><summary className="cursor-pointer">{t('Details', 'التفاصيل')}</summary>{error}</details>
+          <Button onClick={load}>{t('Try again', 'حاول مرة أخرى')}</Button>
+        </div>
+      ) : sections === undefined ? (
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-40" />)}
         </div>
@@ -117,7 +137,7 @@ export default function MenuPage({ channel }: { channel?: Channel }) {
               {cat.time_label && <Badge variant="secondary">{cat.time_label}</Badge>}
             </div>
             <div className={look.grid}>
-              {[...list.filter((i) => i.image_url), ...list.filter((i) => !i.image_url)].map((i) => <MenuItemCard key={i.id} item={i} channel={channel} />)}
+              {list.map((i) => <MenuItemCard key={i.id} item={i} channel={channel} />)}
             </div>
           </section>
         ))
