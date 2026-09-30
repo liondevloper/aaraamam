@@ -1,5 +1,5 @@
 // All theme colors, fonts and radii live here. Change values to restyle a theme.
-export type ThemeId = "theme-1" | "theme-2" | "theme-3";
+export type ThemeId = "theme-1" | "theme-2" | "theme-3" | "theme-4" | "theme-5";
 
 export type ThemeDef = {
   id: ThemeId;
@@ -95,6 +95,65 @@ export const THEMES: ThemeDef[] = [
       "--border": "oklch(0.86 0.05 40)",
       "--input": "oklch(0.86 0.05 40)",
       "--ring": "oklch(0.45 0.16 25)",
+    },
+  },
+  {
+    // Premium: near-black with champagne gold, luxury fine-dining feel
+    id: "theme-4",
+    label: "Royal Gold",
+    font: "'Cormorant Garamond', 'Manrope', serif",
+    hero: "full",
+    card: "outlined",
+    vars: {
+      ...base,
+      "--radius": "0.15rem",
+      "--background": "oklch(0.14 0.005 80)",
+      "--foreground": "oklch(0.95 0.02 85)",
+      "--card": "oklch(0.18 0.008 80)",
+      "--card-foreground": "oklch(0.95 0.02 85)",
+      "--popover": "oklch(0.18 0.008 80)",
+      "--popover-foreground": "oklch(0.95 0.02 85)",
+      "--primary": "oklch(0.8 0.11 85)",
+      "--primary-foreground": "oklch(0.14 0.005 80)",
+      "--secondary": "oklch(0.23 0.01 80)",
+      "--secondary-foreground": "oklch(0.92 0.03 85)",
+      "--muted": "oklch(0.22 0.008 80)",
+      "--muted-foreground": "oklch(0.7 0.03 85)",
+      "--accent": "oklch(0.45 0.12 20)",
+      "--accent-foreground": "oklch(0.96 0.02 85)",
+      "--border": "oklch(0.8 0.11 85 / 25%)",
+      "--input": "oklch(0.8 0.11 85 / 30%)",
+      "--ring": "oklch(0.8 0.11 85)",
+      "--destructive": "oklch(0.65 0.2 25)",
+    },
+  },
+  {
+    // Premium: Kerala banana-leaf green with saffron, modern editorial feel
+    id: "theme-5",
+    label: "Banana Leaf",
+    font: "'Fraunces', 'Manrope', serif",
+    hero: "split",
+    card: "photo",
+    vars: {
+      ...base,
+      "--radius": "1.1rem",
+      "--background": "oklch(0.975 0.015 110)",
+      "--foreground": "oklch(0.22 0.05 155)",
+      "--card": "oklch(0.995 0.005 110)",
+      "--card-foreground": "oklch(0.22 0.05 155)",
+      "--popover": "oklch(0.995 0.005 110)",
+      "--popover-foreground": "oklch(0.22 0.05 155)",
+      "--primary": "oklch(0.36 0.09 158)",
+      "--primary-foreground": "oklch(0.98 0.02 100)",
+      "--secondary": "oklch(0.92 0.05 130)",
+      "--secondary-foreground": "oklch(0.26 0.07 155)",
+      "--muted": "oklch(0.94 0.025 115)",
+      "--muted-foreground": "oklch(0.48 0.04 155)",
+      "--accent": "oklch(0.72 0.17 60)",
+      "--accent-foreground": "oklch(0.2 0.04 50)",
+      "--border": "oklch(0.88 0.035 125)",
+      "--input": "oklch(0.88 0.035 125)",
+      "--ring": "oklch(0.36 0.09 158)",
     },
   },
 ];
