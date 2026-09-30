@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LocateFixed, UtensilsCrossed } from 'lucide-react';
+import { LocateFixed, Motorbike, UtensilsCrossed } from 'lucide-react';
 import { toast } from 'sonner';
 import { placeOrder, quotePromo } from '@/lib/db.ts';
 import { Button } from '@/components/ui/button.tsx';
@@ -16,8 +16,6 @@ import { money, reverseGeocode } from '@/lib/format.ts';
 import { haversineKm } from '@/lib/geo.ts';
 import { cn } from '@/lib/utils.ts';
 
-type HomeType = 'delivery' | 'pickup';
-
 function errorText(e: unknown, fallback: string): string {
   if (e && typeof e === 'object' && 'message' in e && typeof e.message === 'string') return e.message;
   return fallback;
@@ -31,7 +29,6 @@ export default function CheckoutPage() {
   const d = s.delivery;
   const dineIn = cart.channel === 'dine_in';
 
-  const [homeType, setHomeType] = useState<HomeType>(s.flags.delivery ? 'delivery' : 'pickup');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -42,7 +39,8 @@ export default function CheckoutPage() {
   const [promoResult, setPromoResult] = useState<{ valid: boolean; discount: number; message?: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const type = dineIn ? 'dine_in' : homeType;
+  // Home orders are delivery only (customers do not pick up)
+  const type = dineIn ? 'dine_in' : 'delivery';
   const isDelivery = type === 'delivery';
 
   const applyPromo = async () => {
@@ -109,7 +107,7 @@ export default function CheckoutPage() {
       <div className="mx-auto max-w-xl space-y-4 p-10 text-center">
         <p>{t('Your cart is empty.', 'السلة فارغة.')}</p>
         <div className="flex justify-center gap-2">
-          <Button onClick={() => navigate('/order')}>{t('Order for home', 'اطلب للمنزل')}</Button>
+          <Button onClick={() => navigate('/order')}><Motorbike className="size-4" />{t('Order Now', 'اطلب الآن')}</Button>
           <Button variant="secondary" onClick={() => navigate('/table')}>{t('Order at table', 'اطلب على الطاولة')}</Button>
         </div>
       </div>
@@ -133,13 +131,7 @@ export default function CheckoutPage() {
             <p className="text-xs text-muted-foreground">{t('Pay at the table after your meal.', 'ادفع على الطاولة بعد الوجبة.')}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {(['delivery', 'pickup'] as const).filter((k) => s.flags[k]).map((k) => (
-              <button key={k} onClick={() => setHomeType(k)} className={cn('cursor-pointer rounded-lg border p-3 font-medium', homeType === k ? 'border-primary bg-primary text-primary-foreground' : 'bg-card')}>
-                {k === 'delivery' ? t('Delivery', 'توصيل') : t('Pickup', 'استلام')}
-              </button>
-            ))}
-          </div>
+          <p className="flex items-center gap-2 rounded-lg border bg-card p-4 font-medium"><Motorbike className="size-5 text-primary" />{t('Home delivery', 'توصيل للمنزل')}</p>
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">
