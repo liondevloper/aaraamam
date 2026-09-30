@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import type { Settings } from '@/lib/db.ts';
 import { getSettings } from '@/lib/db.ts';
+import { withDefaultImages } from '@/lib/fallback-images.ts';
 import { applyTheme, getTheme } from '@/lib/themes.ts';
 import { Spinner } from '@/components/ui/spinner.tsx';
 
@@ -24,7 +25,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    getSettings().then(setSettings).catch(console.error);
+    getSettings().then((s) => setSettings(withDefaultImages(s))).catch(console.error);
   }, []);
 
   const themeId = override ?? settings?.theme ?? 'theme-1';
