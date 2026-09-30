@@ -3,6 +3,7 @@ import { useLang } from '@/components/providers/lang.tsx';
 import { useSettings } from '@/components/providers/settings.tsx';
 import { ClassicHeader, DrawerHeader, EditorialHeader, SlimHeader } from '@/components/nav/headers.tsx';
 import MobileTabs from '@/components/nav/mobile-tabs.tsx';
+import ThemePicker from '@/components/nav/theme-picker.tsx';
 import { useNavLinks } from '@/components/nav/use-nav-links.ts';
 import { THEME_NAV, hasTabBar } from '@/lib/theme-nav.ts';
 import { cn } from '@/lib/utils.ts';
@@ -51,6 +52,7 @@ export default function SiteLayout() {
       </footer>
 
       {tabs && <MobileTabs links={links} variant={style.nav === 'dock' ? 'dock' : 'bar'} />}
+      <ThemePicker />
     </div>
   );
 }
