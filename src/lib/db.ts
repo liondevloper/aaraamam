@@ -153,14 +153,6 @@ function randomToken(len = 24): string {
     .slice(0, len);
 }
 
-function orderNo(): string {
-  return 'ORD-' + Date.now().toString(36).toUpperCase();
-}
-
-function bookingNo(): string {
-  return 'BK-' + Date.now().toString(36).toUpperCase();
-}
-
 // ── Menu ────────────────────────────────────────────────────────────────────
 
 export async function listCategories(): Promise<Category[]> {
@@ -218,6 +210,7 @@ export async function deleteItem(id: string): Promise<void> {
 
 // ── Orders ──────────────────────────────────────────────────────────────────
 
+/** Prices, promo and fee are computed server-side in the `place_order` RPC so customers cannot tamper with totals. */
 export async function placeOrder(params: {
   orderType: 'delivery' | 'pickup';
   items: { slug: string; variantLabel?: string; qty: number }[];
@@ -232,68 +225,26 @@ export async function placeOrder(params: {
   menuItems: MenuItem[];
   settings: Settings;
 }): Promise<{ orderNo: string; trackingToken: string }> {
-  const { orderType, items: cartLines, menuItems, settings, promoCode } = params;
-
-  // Resolve prices
-  const resolved = cartLines.map((line) => {
-    const mi = menuItems.find((m) => m.slug === line.slug);
-    if (!mi) throw new Error('Item not found: ' + line.slug);
-    const price = line.variantLabel
-      ? (mi.variants?.find((v) => v.label === line.variantLabel)?.price ?? 0)
-      : (mi.price ?? 0);
-    return { name: mi.name_en, variantLabel: line.variantLabel, qty: line.qty, unitPrice: price };
-  });
-
-  const subtotal = resolved.reduce((s, l) => s + l.unitPrice * l.qty, 0);
-
-  // Promo
-  let discount = 0;
-  if (promoCode) {
-    const { data: promo } = await supabase.from('promos').select('*').eq('code', promoCode).eq('active', true).single();
-    if (promo && subtotal >= promo.min_order) {
-      discount = promo.type === 'percent' ? Math.round(subtotal * promo.value) / 100 : promo.value;
-    }
-  }
-
-  const fee = orderType === 'delivery' ? settings.delivery.fee : 0;
-  const total = Math.round((subtotal - discount + fee) * 100) / 100;
-
-  const trackingToken = randomToken();
-  const no = orderNo();
-
-  const { error } = await supabase.from('orders').insert({
-    order_no: no,
-    order_type: orderType,
-    customer_name: params.customerName ?? null,
-    customer_phone: params.customerPhone,
-    address_text: params.addressText ?? null,
-    address_extra: params.addressExtra ?? null,
-    lat: params.lat ?? null,
-    lng: params.lng ?? null,
-    items: resolved,
-    total,
-    promo_code: promoCode ?? null,
-    discount,
-    notes: params.notes ?? null,
-    tracking_token: trackingToken,
+  const { data, error } = await supabase.rpc('place_order', {
+    p_order_type: params.orderType,
+    p_items: params.items.map((l) => ({ slug: l.slug, variantLabel: l.variantLabel ?? null, qty: l.qty })),
+    p_customer_name: params.customerName ?? null,
+    p_customer_phone: params.customerPhone,
+    p_address_text: params.addressText ?? null,
+    p_address_extra: params.addressExtra ?? null,
+    p_lat: params.lat ?? null,
+    p_lng: params.lng ?? null,
+    p_promo_code: params.promoCode ?? null,
+    p_notes: params.notes ?? null,
   });
   if (error) throw error;
-
-  // Telegram notification (fire and forget)
-  void sendTelegramOrderAlert(no, params.customerPhone, total);
-
-  return { orderNo: no, trackingToken };
+  return data as { orderNo: string; trackingToken: string };
 }
 
 export async function getOrderByToken(orderNo: string, token: string): Promise<Order | null> {
-  const { data, error } = await supabase
-    .from('orders')
-    .select('*')
-    .eq('order_no', orderNo)
-    .eq('tracking_token', token)
-    .single();
+  const { data, error } = await supabase.rpc('get_order_by_token', { p_order_no: orderNo, p_token: token });
   if (error) return null;
-  return data;
+  return (data as Order[] | null)?.[0] ?? null;
 }
 
 export async function listOrdersForAdmin(): Promise<Order[]> {
@@ -319,30 +270,26 @@ export async function assignRider(id: string, riderName: string, riderPhone: str
 }
 
 export async function getOrderByRiderToken(token: string): Promise<Order | null> {
-  const { data, error } = await supabase.from('orders').select('*').eq('rider_token', token).single();
+  const { data, error } = await supabase.rpc('get_order_by_rider', { p_token: token });
   if (error) return null;
-  return data;
+  return (data as Order[] | null)?.[0] ?? null;
 }
 
 export async function updateRiderLocation(token: string, action: string, lat?: number, lng?: number): Promise<void> {
-  const order = await getOrderByRiderToken(token);
-  if (!order) throw new Error('Order not found');
-  if (action === 'picked_up') {
-    await supabase.from('orders').update({ status: 'out_for_delivery' }).eq('rider_token', token);
-  } else if (action === 'location' && lat !== undefined && lng !== undefined) {
-    await supabase.from('orders').update({ rider_lat: lat, rider_lng: lng }).eq('rider_token', token);
-  } else if (action === 'on_the_way') {
-    await supabase.from('orders').update({ status: 'out_for_delivery' }).eq('rider_token', token);
-  } else if (action === 'delivered') {
-    await supabase.from('orders').update({ status: 'delivered' }).eq('rider_token', token);
-  }
+  const { error } = await supabase.rpc('rider_update', {
+    p_token: token,
+    p_action: action,
+    p_lat: lat ?? null,
+    p_lng: lng ?? null,
+  });
+  if (error) throw error;
 }
 
 export async function quotePromo(code: string, subtotal: number): Promise<{ valid: boolean; discount: number; message?: string }> {
-  const { data: promo } = await supabase.from('promos').select('*').eq('code', code).eq('active', true).single();
+  const { data: promo } = await supabase.from('promos').select('*').eq('code', code.toUpperCase()).eq('active', true).maybeSingle();
   if (!promo) return { valid: false, discount: 0, message: 'Invalid promo code' };
   if (subtotal < promo.min_order) return { valid: false, discount: 0, message: `Min order AED ${promo.min_order}` };
-  const discount = promo.type === 'percent' ? Math.round(subtotal * promo.value) / 100 : promo.value;
+  const discount = promo.type === 'percent' ? Math.round(subtotal * promo.value) / 100 : Math.min(promo.value, subtotal);
   return { valid: true, discount };
 }
 
@@ -355,44 +302,33 @@ export async function getBookingSlots(date: string, config: Settings['booking_co
   if (holidays.includes(date)) return [];
 
   const slots: string[] = [];
-  let [h, m] = open.split(':').map(Number);
+  const [oh, om] = open.split(':').map(Number);
   const [ch, cm] = close.split(':').map(Number);
-  while (h * 60 + m < ch * 60 + cm) {
-    slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
-    m += slotMinutes;
-    if (m >= 60) { h += Math.floor(m / 60); m %= 60; }
+  for (let t = oh * 60 + om; t < ch * 60 + cm; t += slotMinutes) {
+    slots.push(`${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`);
   }
 
-  const { data: existing } = await supabase
-    .from('bookings')
-    .select('slot, guests')
-    .eq('booking_date', date)
-    .neq('status', 'cancelled');
-
+  // Bookings are private; the RPC only returns aggregated guest counts per slot.
+  const { data: usage } = await supabase.rpc('booking_usage', { p_date: date });
   const used: Record<string, number> = {};
-  for (const b of existing ?? []) {
-    used[b.slot] = (used[b.slot] ?? 0) + b.guests;
+  for (const u of (usage as { slot: string; used: number }[] | null) ?? []) {
+    used[u.slot] = Number(u.used);
   }
 
   return slots.map((slot) => ({ slot, remaining: capacityPerSlot - (used[slot] ?? 0) })).filter((s) => s.remaining > 0);
 }
 
 export async function createBooking(params: { name: string; phone: string; date: string; slot: string; guests: number; notes?: string; config: Settings['booking_config'] }): Promise<{ bookingNo: string }> {
-  const slots = await getBookingSlots(params.date, params.config);
-  const s = slots.find((x) => x.slot === params.slot);
-  if (!s || s.remaining < params.guests) throw new Error('Slot not available');
-  const no = bookingNo();
-  const { error } = await supabase.from('bookings').insert({
-    booking_no: no,
-    booking_date: params.date,
-    slot: params.slot,
-    guests: params.guests,
-    name: params.name,
-    phone: params.phone,
-    notes: params.notes ?? null,
+  const { data, error } = await supabase.rpc('create_booking', {
+    p_name: params.name,
+    p_phone: params.phone,
+    p_date: params.date,
+    p_slot: params.slot,
+    p_guests: params.guests,
+    p_notes: params.notes ?? null,
   });
   if (error) throw error;
-  return { bookingNo: no };
+  return { bookingNo: data as string };
 }
 
 export async function listBookingsForAdmin(): Promise<Booking[]> {
@@ -456,20 +392,13 @@ export async function updateSettingsPrivate(values: Partial<SettingsPrivate>): P
 // ── Admin Auth ────────────────────────────────────────────────────────────────
 
 export async function getAdminStatus(): Promise<{ signedIn: boolean; isAdmin: boolean; canClaim: boolean }> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { signedIn: false, isAdmin: false, canClaim: false };
-  const { data: adminRow } = await supabase.from('admins').select('id').eq('user_id', user.id).single();
-  if (adminRow) return { signedIn: true, isAdmin: true, canClaim: false };
-  const { count } = await supabase.from('admins').select('id', { count: 'exact', head: true });
-  return { signedIn: true, isAdmin: false, canClaim: (count ?? 0) === 0 };
+  const { data, error } = await supabase.rpc('admin_status');
+  if (error || !data) return { signedIn: false, isAdmin: false, canClaim: false };
+  return data as { signedIn: boolean; isAdmin: boolean; canClaim: boolean };
 }
 
 export async function claimAdmin(): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not signed in');
-  const { count } = await supabase.from('admins').select('id', { count: 'exact', head: true });
-  if ((count ?? 0) > 0) throw new Error('Admin already exists');
-  const { error } = await supabase.from('admins').insert({ user_id: user.id });
+  const { error } = await supabase.rpc('claim_admin');
   if (error) throw error;
 }
 
@@ -484,22 +413,7 @@ export async function uploadImage(file: File): Promise<string> {
   return data.publicUrl;
 }
 
-// ── Telegram (best-effort) ────────────────────────────────────────────────────
-
-async function sendTelegramOrderAlert(orderNo: string, phone: string, total: number): Promise<void> {
-  try {
-    const priv = await getSettingsPrivate();
-    if (!priv.telegram_enabled || !priv.bot_token || !priv.chat_id) return;
-    const text = `🔔 New order ${orderNo}\nPhone: ${phone}\nTotal: AED ${total.toFixed(2)}`;
-    await fetch(`https://api.telegram.org/bot${priv.bot_token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: priv.chat_id, text }),
-    });
-  } catch {
-    // silent
-  }
-}
+// ── Telegram (admin only; bot token is private) ───────────────────────────────
 
 export async function sendTelegramTest(): Promise<void> {
   const priv = await getSettingsPrivate();
@@ -507,7 +421,7 @@ export async function sendTelegramTest(): Promise<void> {
   const res = await fetch(`https://api.telegram.org/bot${priv.bot_token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: priv.chat_id, text: '✅ Aaraamam test message' }),
+    body: JSON.stringify({ chat_id: priv.chat_id, text: 'Aaraamam test message' }),
   });
   if (!res.ok) throw new Error('Failed to send');
 }
