@@ -3,10 +3,11 @@ import { useSettings } from '@/components/providers/settings.tsx';
 import { applyAdminTheme, applyTheme, getAdminTheme, getTheme, type AdminLayoutId } from '@/lib/themes.ts';
 
 const ADMIN_LAYOUT_KEY = 'aaraamam-admin-layout';
+const VALID_LAYOUTS: AdminLayoutId[] = ['classic', 'midnight', 'emerald'];
 
 function readStored(): AdminLayoutId {
   const v = localStorage.getItem(ADMIN_LAYOUT_KEY);
-  return v === 'midnight' ? 'midnight' : 'classic';
+  return VALID_LAYOUTS.includes(v as AdminLayoutId) ? (v as AdminLayoutId) : 'classic';
 }
 
 /**
