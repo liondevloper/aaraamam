@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CalendarDays, Clock, MapPin, ShoppingBag } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, Truck, UtensilsCrossed } from 'lucide-react';
 import { motion } from 'motion/react';
 import type { Category, MenuItem } from '@/lib/db.ts';
 import { listCategories, listItems } from '@/lib/db.ts';
@@ -26,7 +26,7 @@ export default function Home() {
   }, []);
 
   const serving = cats.filter((x) => x.active && x.available_from && inWindow(x.available_from, x.available_to));
-  const popular = items.filter((i) => i.popular).slice(0, 6);
+  const popular = items.filter((i) => i.popular && i.available).slice(0, 6);
   const banner = lang === 'ar' && c.offerBannerAr ? c.offerBannerAr : c.offerBannerEn;
 
   const title = t(c.heroTitleEn, c.heroTitleAr);
@@ -34,7 +34,10 @@ export default function Home() {
   const buttons = (
     <div className={cn('flex flex-wrap gap-3', layout === 'centered' && 'justify-center')}>
       {s.flags.ordering && (
-        <Button asChild size="lg"><Link to="/order"><ShoppingBag className="size-4" />{t('Order Online', 'اطلب الآن')}</Link></Button>
+        <>
+          <Button asChild size="lg"><Link to="/order"><Truck className="size-4" />{t('Order for Home', 'اطلب للمنزل')}</Link></Button>
+          <Button asChild size="lg" variant="secondary"><Link to="/table"><UtensilsCrossed className="size-4" />{t('Order at Table', 'اطلب على الطاولة')}</Link></Button>
+        </>
       )}
       {s.flags.booking && (
         <Button asChild size="lg" variant="secondary"><Link to="/book"><CalendarDays className="size-4" />{t('Book a Table', 'احجز طاولة')}</Link></Button>
