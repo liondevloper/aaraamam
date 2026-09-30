@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { BellRing, CalendarDays, ClipboardList, ExternalLink, FileText, LayoutDashboard, LogOut, Moon, Settings2, Sun, UtensilsCrossed, Volume2 } from 'lucide-react';
+import { BellRing, CalendarDays, ClipboardList, ExternalLink, FileText, LayoutDashboard, LogOut, Moon, Settings2, Sparkles, Sun, UtensilsCrossed, Volume2 } from 'lucide-react';
 import { claimAdmin } from '@/lib/db.ts';
 import { supabase } from '@/lib/supabase.ts';
 import { Button } from '@/components/ui/button.tsx';
@@ -25,10 +25,16 @@ import StatsBar from './_components/stats-bar.tsx';
 
 const LION_LOGO = 'https://hercules-cdn.com/file_YhLYv39scgdutD2CYKbozlog';
 
+const LAYOUT_ICONS: Record<AdminLayoutId, typeof Sun> = {
+  classic: Sun,
+  midnight: Moon,
+  emerald: Sparkles,
+};
+
 export default function AdminPage() {
   const { layout, setLayout } = useAdminTheme();
   return (
-    <div className={cn(layout === 'classic' ? 'mx-auto min-h-svh max-w-6xl px-4 py-6' : 'min-h-svh')}>
+    <div className={cn(layout === 'midnight' ? 'min-h-svh' : 'mx-auto min-h-svh max-w-6xl px-4 py-6')}>
       <Gate layout={layout} setLayout={setLayout} />
     </div>
   );
@@ -54,7 +60,7 @@ function Gate({ layout, setLayout }: { layout: AdminLayoutId; setLayout: (id: Ad
       <div className="flex min-h-svh items-center justify-center px-4">
         <div className="w-full max-w-sm space-y-5 rounded-2xl border bg-card p-8 shadow-sm">
           <div className="flex flex-col items-center gap-2">
-            <img src={LION_LOGO} alt="Lion Developer" className="h-64 w-64 object-contain" />
+            <img src={LION_LOGO} alt="Lion Developer" className="h-80 w-80 object-contain" />
             <h1 className="text-2xl font-bold tracking-wide">Aaraamam</h1>
           </div>
           <p className="text-center text-sm text-muted-foreground">Sign in to manage the restaurant</p>
@@ -100,24 +106,27 @@ const TABS = [
   { value: 'content', label: 'Content', icon: FileText },
 ] as const;
 
-// Compact control to flip between the two premium admin looks. Choice is saved per browser.
+// Compact control to flip between the premium admin looks. Choice is saved per browser.
 function LayoutSwitcher({ layout, setLayout, compact }: { layout: AdminLayoutId; setLayout: (id: AdminLayoutId) => void; compact?: boolean }) {
   return (
     <div className={cn('flex items-center gap-1 rounded-lg border bg-secondary/60 p-1', compact && 'w-full')}>
-      {ADMIN_THEMES.map((t) => (
-        <button
-          key={t.id}
-          title={t.description}
-          onClick={() => setLayout(t.id)}
-          className={cn(
-            'flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors',
-            layout === t.id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
-          )}
-        >
-          {t.id === 'midnight' ? <Moon className="size-3.5" /> : <Sun className="size-3.5" />}
-          {t.label}
-        </button>
-      ))}
+      {ADMIN_THEMES.map((t) => {
+        const Icon = LAYOUT_ICONS[t.id];
+        return (
+          <button
+            key={t.id}
+            title={t.description}
+            onClick={() => setLayout(t.id)}
+            className={cn(
+              'flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors',
+              layout === t.id ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <Icon className="size-3.5" />
+            {t.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
