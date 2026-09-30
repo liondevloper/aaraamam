@@ -14,6 +14,7 @@ import { Switch } from '@/components/ui/switch.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
 import { useRefreshSettings, useSettings } from '@/components/providers/settings.tsx';
 import { useStoreStatus } from '@/hooks/use-store-status.ts';
+import { Chip, Panel } from './admin-ui.tsx';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 type Until = 'manual' | '30' | '60' | '120' | 'time';
@@ -63,33 +64,24 @@ export default function ControlCenter() {
   const { title, sub } = statusText(status, now);
 
   return (
-    <section className="space-y-3">
-      <div className={cn('flex items-center gap-4 rounded-2xl border p-5', tone.box)}>
+    <section className="space-y-4">
+      <div className={cn('flex items-center gap-4 rounded-[calc(var(--radius)+4px)] border p-5', tone.box)}>
         <span className="relative flex size-4 shrink-0">
           <span className={cn('absolute inline-flex size-full animate-ping rounded-full opacity-60', tone.dot)} />
           <span className={cn('relative inline-flex size-4 rounded-full', tone.dot)} />
         </span>
         <div className="min-w-0">
-          <p className={cn('text-xl font-bold', tone.text)}>{title}</p>
+          <p className={cn('text-lg font-bold sm:text-xl', tone.text)}>{title}</p>
           <p className="text-sm text-muted-foreground">{sub}</p>
         </div>
-        <span className="ml-auto hidden text-xs text-muted-foreground sm:block">Live · changes reach customers instantly</span>
+        <span className="ml-auto hidden text-xs text-muted-foreground lg:block">Live · changes reach customers instantly</span>
       </div>
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-3">
         <ShiftCard status={status} />
         <HoursCard />
         <MaintenanceCard />
       </div>
     </section>
-  );
-}
-
-function Card({ icon: Icon, title, children }: { icon: typeof Power; title: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-3 rounded-xl border bg-card p-4">
-      <p className="flex items-center gap-2 font-semibold"><Icon className="size-4 text-primary" />{title}</p>
-      {children}
-    </div>
   );
 }
 
@@ -128,9 +120,8 @@ function ShiftCard({ status }: { status: StoreStatus }) {
   };
 
   return (
-    <Card icon={Power} title="Order shift">
-      <p className="text-sm text-muted-foreground">Stop new orders for a break or at closing time. Customers see when you open again.</p>
-      <div className="mt-auto">
+    <Panel icon={Power} title="Order shift" description="Stop new orders for a break or at closing time." className="flex flex-col [&>div:last-child]:flex-1">
+      <div className="flex h-full flex-col justify-end">
         {orderingOff ? (
           <Button className="w-full" size="lg" disabled={busy} onClick={() => void orderingOn()}>Turn online ordering on</Button>
         ) : closedByShift ? (
@@ -156,11 +147,11 @@ function ShiftCard({ status }: { status: StoreStatus }) {
               <Label>Reopen</Label>
               <div className="flex flex-wrap gap-2">
                 {(Object.keys(UNTIL_LABEL) as Until[]).map((k) => (
-                  <button key={k} onClick={() => setUntil(k)} className={cn('cursor-pointer rounded-full border px-3 py-1.5 text-sm', until === k ? 'border-primary bg-primary text-primary-foreground' : 'bg-card')}>{UNTIL_LABEL[k]}</button>
+                  <Chip key={k} active={until === k} onClick={() => setUntil(k)}>{UNTIL_LABEL[k]}</Chip>
                 ))}
               </div>
               {until === 'time' && (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Input type="time" value={at} onChange={(e) => setAt(e.target.value)} className="w-36" />
                   <span className="text-sm text-muted-foreground">Dubai time · opens {formatDubai(dubaiTimeToDate(at, new Date()), 'en')}</span>
                 </div>
@@ -174,7 +165,7 @@ function ShiftCard({ status }: { status: StoreStatus }) {
           </div>
         </DialogContent>
       </Dialog>
-    </Card>
+    </Panel>
   );
 }
 
@@ -190,24 +181,29 @@ function HoursCard() {
   });
 
   return (
-    <Card icon={CalendarClock} title="Opening timetable">
-      <label className="flex items-center justify-between gap-2 text-sm">
-        <span>Open and close automatically</span>
-        <Switch checked={s.store.autoHours} disabled={busy} onCheckedChange={(c) => void patch({ autoHours: c, hours }, c ? 'Timetable on' : 'Timetable off')} />
-      </label>
+    <Panel
+      icon={CalendarClock}
+      title="Opening timetable"
+      description="Dubai time. Red days stay closed."
+      action={<Switch checked={s.store.autoHours} disabled={busy} aria-label="Open and close automatically" onCheckedChange={(c) => void patch({ autoHours: c, hours }, c ? 'Timetable on' : 'Timetable off')} />}
+    >
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1"><Label className="text-xs">Opens</Label><Input type="time" value={hours.open} onChange={(e) => setHours({ ...hours, open: e.target.value })} /></div>
         <div className="space-y-1"><Label className="text-xs">Closes</Label><Input type="time" value={hours.close} onChange={(e) => setHours({ ...hours, close: e.target.value })} /></div>
       </div>
-      <div className="flex flex-wrap gap-1">
+      <div className="grid grid-cols-7 gap-1">
         {DAYS.map((d, i) => {
           const off = hours.closedWeekdays.includes(i);
-          return <button key={d} onClick={() => toggleDay(i)} className={cn('cursor-pointer rounded-md border px-2 py-1 text-xs', off ? 'border-destructive bg-destructive text-white' : 'bg-background')}>{d}</button>;
+          return (
+            <button key={d} type="button" onClick={() => toggleDay(i)} className={cn('cursor-pointer rounded-md border py-1.5 text-xs font-medium', off ? 'border-destructive bg-destructive text-white' : 'bg-background hover:bg-secondary')}>
+              {d}
+            </button>
+          );
         })}
       </div>
-      <p className="text-xs text-muted-foreground">Dubai time. Red days stay closed. Late closing (e.g. 18:00 to 02:00) works too.</p>
-      {dirty && <Button disabled={busy} onClick={() => void patch({ hours }, 'Timetable saved')}>Save timetable</Button>}
-    </Card>
+      <p className="text-xs text-muted-foreground">{s.store.autoHours ? 'Automatic opening is on.' : 'Automatic opening is off.'} Late closing (e.g. 18:00 to 02:00) works too.</p>
+      {dirty && <Button className="w-full" disabled={busy} onClick={() => void patch({ hours }, 'Timetable saved')}>Save timetable</Button>}
+    </Panel>
   );
 }
 
@@ -225,9 +221,8 @@ function MaintenanceCard() {
   };
 
   return (
-    <Card icon={Wrench} title="Maintenance mode">
-      <p className="text-sm text-muted-foreground">Hide the whole website behind a "back soon" page. Live order tracking keeps working.</p>
-      <label className={cn('mt-auto flex items-center justify-between gap-2 rounded-lg border p-3 text-sm font-medium', on && 'border-amber-500/50 bg-amber-500/10')}>
+    <Panel icon={Wrench} title="Maintenance mode" description={'Hide the website behind a "back soon" page. Order tracking keeps working.'}>
+      <label className={cn('flex cursor-pointer items-center justify-between gap-2 rounded-[var(--radius)] border p-3 text-sm font-medium', on && 'border-amber-500/50 bg-amber-500/10')}>
         <span>{on ? 'Maintenance is ON' : 'Website is live'}</span>
         <Switch checked={on} disabled={busy} onCheckedChange={(c) => (c ? setConfirm(true) : void patch({ maintenance: false }, 'Website is live again'))} />
       </label>
@@ -243,6 +238,6 @@ function MaintenanceCard() {
           <Button variant="destructive" size="lg" disabled={busy} onClick={() => void turnOn()}>Turn on maintenance</Button>
         </DialogContent>
       </Dialog>
-    </Card>
+    </Panel>
   );
 }

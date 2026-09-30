@@ -1,16 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Trash2 } from 'lucide-react';
+import { CalendarDays, Check, Palette, Send, Tag, ToggleRight, Trash2, Truck } from 'lucide-react';
 import type { Settings, SettingsPrivate, Promo } from '@/lib/db.ts';
 import { createPromo, deletePromo, getSettingsPrivate, listPromos, sendTelegramTest, setPromoActive, updateSettings, updateSettingsPrivate } from '@/lib/db.ts';
 import { errMsg } from '@/lib/errors.ts';
+import { THEMES } from '@/lib/themes.ts';
+import { THEME_NAV } from '@/lib/theme-nav.ts';
+import { cn } from '@/lib/utils.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Input } from '@/components/ui/input.tsx';
-import { Label } from '@/components/ui/label.tsx';
+import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
 import { useRefreshSettings, useSettings } from '@/components/providers/settings.tsx';
-import { THEMES } from '@/lib/themes.ts';
-import { cn } from '@/lib/utils.ts';
+import { Chip, Field, Panel, SaveBar, ThemeSwatch } from './admin-ui.tsx';
 
 const FLAG_LABELS: Record<keyof Settings['flags'], string> = {
   ordering: 'Online ordering', booking: 'Table booking', delivery: 'Delivery', pickup: 'Pickup',
@@ -24,6 +26,8 @@ export default function SettingsTab() {
   const [s, setS] = useState<Settings>(current);
   const [saving, setSaving] = useState(false);
   const num = (v: string) => Number(v) || 0;
+  const setDelivery = (p: Partial<Settings['delivery']>) => setS({ ...s, delivery: { ...s.delivery, ...p } });
+  const setBooking = (p: Partial<Settings['booking_config']>) => setS({ ...s, booking_config: { ...s.booking_config, ...p } });
 
   const submit = async () => {
     setSaving(true);
@@ -40,55 +44,91 @@ export default function SettingsTab() {
     }
   };
 
+  const closedDays = s.booking_config.closedWeekdays;
+
   return (
-    <div className="max-w-3xl space-y-8">
-      <Block title="Brand and theme">
+    <div className="mx-auto max-w-4xl space-y-6">
+      <Panel icon={Palette} title="Brand and website theme" description="The look customers see. The admin panel theme is changed from the palette button.">
         <Field label="Restaurant name"><Input value={s.restaurant_name} onChange={(e) => setS({ ...s, restaurant_name: e.target.value })} /></Field>
-        <div className="flex flex-wrap gap-2">
-          {THEMES.map((t) => (
-            <button key={t.id} onClick={() => setS({ ...s, theme: t.id })} className={cn('cursor-pointer rounded-lg border px-4 py-2 text-sm', s.theme === t.id ? 'border-primary bg-primary text-primary-foreground' : 'bg-card')}>{t.label}</button>
-          ))}
-        </div>
-        <Field label="Primary color"><Input value={s.primary_color ?? ''} onChange={(e) => setS({ ...s, primary_color: e.target.value || null })} /></Field>
-      </Block>
-
-      <Block title="Switches">
-        <p className="text-sm text-muted-foreground">Shift open/close, opening timetable and maintenance are at the top of the admin panel.</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {(Object.keys(FLAG_LABELS) as (keyof Settings['flags'])[]).map((k) => (
-            <label key={k} className="flex items-center gap-2 text-sm"><Switch checked={s.flags[k]} onCheckedChange={(c) => setS({ ...s, flags: { ...s.flags, [k]: c } })} />{FLAG_LABELS[k]}</label>
-          ))}
-        </div>
-      </Block>
-
-      <Block title="Delivery and VAT">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Field label="Radius (km)"><Input type="number" value={s.delivery.radiusKm} onChange={(e) => setS({ ...s, delivery: { ...s.delivery, radiusKm: num(e.target.value) } })} /></Field>
-          <Field label="Delivery fee (AED)"><Input type="number" value={s.delivery.fee} onChange={(e) => setS({ ...s, delivery: { ...s.delivery, fee: num(e.target.value) } })} /></Field>
-          <Field label="Min order (AED)"><Input type="number" value={s.delivery.minOrder} onChange={(e) => setS({ ...s, delivery: { ...s.delivery, minOrder: num(e.target.value) } })} /></Field>
-          <Field label="Restaurant latitude"><Input type="number" step="0.0001" value={s.delivery.lat} onChange={(e) => setS({ ...s, delivery: { ...s.delivery, lat: num(e.target.value) } })} /></Field>
-          <Field label="Restaurant longitude"><Input type="number" step="0.0001" value={s.delivery.lng} onChange={(e) => setS({ ...s, delivery: { ...s.delivery, lng: num(e.target.value) } })} /></Field>
-          <Field label="VAT %"><Input type="number" value={s.vat_percent} onChange={(e) => setS({ ...s, vat_percent: num(e.target.value) })} /></Field>
-        </div>
-      </Block>
-
-      <Block title="Table booking">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <Field label="Opens"><Input type="time" value={s.booking_config.open} onChange={(e) => setS({ ...s, booking_config: { ...s.booking_config, open: e.target.value } })} /></Field>
-          <Field label="Closes"><Input type="time" value={s.booking_config.close} onChange={(e) => setS({ ...s, booking_config: { ...s.booking_config, close: e.target.value } })} /></Field>
-          <Field label="Slot length (min)"><Input type="number" value={s.booking_config.slotMinutes} onChange={(e) => setS({ ...s, booking_config: { ...s.booking_config, slotMinutes: Math.max(5, num(e.target.value)) } })} /></Field>
-          <Field label="Guests per slot"><Input type="number" value={s.booking_config.capacityPerSlot} onChange={(e) => setS({ ...s, booking_config: { ...s.booking_config, capacityPerSlot: num(e.target.value) } })} /></Field>
-          <Field label="Days ahead"><Input type="number" value={s.booking_config.maxDaysAhead} onChange={(e) => setS({ ...s, booking_config: { ...s.booking_config, maxDaysAhead: num(e.target.value) } })} /></Field>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {DAYS.map((d, i) => {
-            const closed = s.booking_config.closedWeekdays.includes(i);
-            return <button key={d} onClick={() => setS({ ...s, booking_config: { ...s.booking_config, closedWeekdays: closed ? s.booking_config.closedWeekdays.filter((x) => x !== i) : [...s.booking_config.closedWeekdays, i] } })} className={cn('cursor-pointer rounded-md border px-3 py-1 text-sm', closed ? 'bg-destructive text-white' : 'bg-card')}>{d}{closed && ' (closed)'}</button>;
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {THEMES.map((t) => {
+            const on = s.theme === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setS({ ...s, theme: t.id })}
+                className={cn('flex cursor-pointer items-center gap-3 rounded-[var(--radius)] border p-3 text-left transition-colors hover:bg-secondary', on && 'border-primary ring-2 ring-primary/30')}
+              >
+                <ThemeSwatch vars={t.vars} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold">{t.label}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{THEME_NAV[t.id].name}</span>
+                </span>
+                {on && <Check className="size-4 shrink-0 text-primary" />}
+              </button>
+            );
           })}
         </div>
-      </Block>
+        <Field label="Custom primary color" hint="Optional. Leave empty to use the theme color. Example: #1f7a4d">
+          <div className="flex gap-2">
+            <Input value={s.primary_color ?? ''} placeholder="#1f7a4d" onChange={(e) => setS({ ...s, primary_color: e.target.value || null })} />
+            {s.primary_color && <span className="size-9 shrink-0 rounded-md border" style={{ background: s.primary_color }} />}
+          </div>
+        </Field>
+      </Panel>
 
-      <Button size="lg" disabled={saving} onClick={() => void submit()}>{saving ? 'Saving…' : 'Save settings'}</Button>
+      <Panel icon={ToggleRight} title="Features" description="Shift, timetable and maintenance are on the Dashboard.">
+        <div className="grid gap-2 sm:grid-cols-2">
+          {(Object.keys(FLAG_LABELS) as (keyof Settings['flags'])[]).map((k) => (
+            <label key={k} className="flex cursor-pointer items-center justify-between gap-3 rounded-[var(--radius)] border px-3 py-2.5 text-sm">
+              {FLAG_LABELS[k]}
+              <Switch checked={s.flags[k]} onCheckedChange={(c) => setS({ ...s, flags: { ...s.flags, [k]: c } })} />
+            </label>
+          ))}
+        </div>
+      </Panel>
+
+      <Panel icon={Truck} title="Delivery and VAT">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Radius (km)"><Input type="number" value={s.delivery.radiusKm} onChange={(e) => setDelivery({ radiusKm: num(e.target.value) })} /></Field>
+          <Field label="Delivery fee (AED)"><Input type="number" value={s.delivery.fee} onChange={(e) => setDelivery({ fee: num(e.target.value) })} /></Field>
+          <Field label="Min order (AED)"><Input type="number" value={s.delivery.minOrder} onChange={(e) => setDelivery({ minOrder: num(e.target.value) })} /></Field>
+          <Field label="Restaurant latitude"><Input type="number" step="0.0001" value={s.delivery.lat} onChange={(e) => setDelivery({ lat: num(e.target.value) })} /></Field>
+          <Field label="Restaurant longitude"><Input type="number" step="0.0001" value={s.delivery.lng} onChange={(e) => setDelivery({ lng: num(e.target.value) })} /></Field>
+          <Field label="VAT %"><Input type="number" value={s.vat_percent} onChange={(e) => setS({ ...s, vat_percent: num(e.target.value) })} /></Field>
+        </div>
+      </Panel>
+
+      <Panel icon={CalendarDays} title="Table booking">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <Field label="Opens"><Input type="time" value={s.booking_config.open} onChange={(e) => setBooking({ open: e.target.value })} /></Field>
+          <Field label="Closes"><Input type="time" value={s.booking_config.close} onChange={(e) => setBooking({ close: e.target.value })} /></Field>
+          <Field label="Slot length (min)"><Input type="number" value={s.booking_config.slotMinutes} onChange={(e) => setBooking({ slotMinutes: Math.max(5, num(e.target.value)) })} /></Field>
+          <Field label="Guests per slot"><Input type="number" value={s.booking_config.capacityPerSlot} onChange={(e) => setBooking({ capacityPerSlot: num(e.target.value) })} /></Field>
+          <Field label="Days ahead"><Input type="number" value={s.booking_config.maxDaysAhead} onChange={(e) => setBooking({ maxDaysAhead: num(e.target.value) })} /></Field>
+        </div>
+        <Field label="Closed for booking" hint="Tap a day to close it for bookings">
+          <div className="flex flex-wrap gap-2">
+            {DAYS.map((d, i) => {
+              const closed = closedDays.includes(i);
+              return (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setBooking({ closedWeekdays: closed ? closedDays.filter((x) => x !== i) : [...closedDays, i] })}
+                  className={cn('cursor-pointer rounded-full border px-3 py-1.5 text-sm font-medium', closed ? 'border-destructive bg-destructive text-white' : 'bg-card hover:bg-secondary')}
+                >
+                  {d}
+                </button>
+              );
+            })}
+          </div>
+        </Field>
+      </Panel>
+
+      <SaveBar busy={saving} label="Save settings" onSave={() => void submit()} />
+
       <TelegramBlock />
       <PromoBlock />
     </div>
@@ -97,57 +137,97 @@ export default function SettingsTab() {
 
 function TelegramBlock() {
   const [priv, setPriv] = useState<SettingsPrivate | null>(null);
-  useEffect(() => { getSettingsPrivate().then(setPriv).catch(console.error); }, []);
-  if (!priv) return null;
+  const [failed, setFailed] = useState(false);
+  useEffect(() => { getSettingsPrivate().then(setPriv).catch(() => setFailed(true)); }, []);
+
+  const save = async () => {
+    if (!priv) return;
+    try {
+      await updateSettingsPrivate(priv);
+      toast.success('Telegram settings saved');
+    } catch (e) {
+      toast.error(errMsg(e));
+    }
+  };
+  const test = async () => {
+    if (!priv) return;
+    try {
+      await updateSettingsPrivate(priv);
+      await sendTelegramTest();
+      toast.success('Test message sent');
+    } catch {
+      toast.error('Enable Telegram and fill in both fields');
+    }
+  };
+
   return (
-    <Block title="Telegram alerts">
-      <label className="flex items-center gap-2 text-sm"><Switch checked={priv.telegram_enabled} onCheckedChange={(c) => setPriv({ ...priv, telegram_enabled: c })} />Enabled</label>
-      <Field label="Bot token"><Input type="password" value={priv.bot_token} onChange={(e) => setPriv({ ...priv, bot_token: e.target.value })} /></Field>
-      <Field label="Chat ID"><Input value={priv.chat_id} onChange={(e) => setPriv({ ...priv, chat_id: e.target.value })} /></Field>
-      <div className="flex gap-2">
-        <Button onClick={async () => { await updateSettingsPrivate(priv); toast.success('Saved'); }}>Save</Button>
-        <Button variant="secondary" onClick={async () => { try { await updateSettingsPrivate(priv); await sendTelegramTest(); toast.success('Test message sent'); } catch { toast.error('Enable Telegram and fill in both fields'); } }}>Send test message</Button>
-      </div>
-    </Block>
+    <Panel icon={Send} title="Telegram alerts" description="Get a Telegram message for every new order">
+      {failed ? <p className="text-sm text-muted-foreground">Could not load Telegram settings.</p> : !priv ? <Skeleton className="h-24" /> : (
+        <>
+          <label className="flex items-center gap-2 text-sm"><Switch checked={priv.telegram_enabled} onCheckedChange={(c) => setPriv({ ...priv, telegram_enabled: c })} />Enabled</label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Bot token"><Input type="password" value={priv.bot_token} onChange={(e) => setPriv({ ...priv, bot_token: e.target.value })} /></Field>
+            <Field label="Chat ID"><Input value={priv.chat_id} onChange={(e) => setPriv({ ...priv, chat_id: e.target.value })} /></Field>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => void save()}>Save</Button>
+            <Button variant="secondary" onClick={() => void test()}>Send test message</Button>
+          </div>
+        </>
+      )}
+    </Panel>
   );
 }
 
 function PromoBlock() {
-  const [promos, setPromos] = useState<Promo[]>([]);
+  const [promos, setPromos] = useState<Promo[] | null>(null);
   const [code, setCode] = useState('');
   const [type, setType] = useState<'percent' | 'fixed'>('percent');
   const [value, setValue] = useState(10);
   const [min, setMin] = useState(0);
 
-  useEffect(() => { listPromos().then(setPromos).catch(console.error); }, []);
+  const load = useCallback(() => listPromos().then(setPromos).catch(() => setPromos((p) => p ?? [])), []);
+  useEffect(() => { void load(); }, [load]);
 
-  const add = async () => {
-    try { await createPromo({ code, type, value, minOrder: min }); setCode(''); await listPromos().then(setPromos); } catch { toast.error('Could not create code'); }
+  const act = (p: Promise<void>, ok?: string) => p.then(() => { if (ok) toast.success(ok); return load(); }).catch((e: unknown) => { toast.error(errMsg(e)); });
+
+  const add = () => {
+    if (!code.trim()) {
+      toast.error('Enter a code');
+      return;
+    }
+    void act(createPromo({ code, type, value, minOrder: min }).then(() => setCode('')), 'Promo code added');
   };
 
   return (
-    <Block title="Promo codes">
-      <div className="grid gap-2 sm:grid-cols-5">
-        <Input placeholder="WELCOME10" value={code} onChange={(e) => setCode(e.target.value)} />
-        <select className="rounded-md border bg-background px-2 text-sm" value={type} onChange={(e) => setType(e.target.value as 'percent' | 'fixed')}><option value="percent">Percent</option><option value="fixed">Fixed AED</option></select>
-        <Input type="number" value={value} onChange={(e) => setValue(Number(e.target.value))} />
-        <Input type="number" placeholder="Min order" value={min} onChange={(e) => setMin(Number(e.target.value))} />
-        <Button onClick={() => void add()}>Add</Button>
+    <Panel icon={Tag} title="Promo codes">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.4fr_auto_1fr_1fr_auto] lg:items-end">
+        <Field label="Code"><Input placeholder="WELCOME10" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} /></Field>
+        <Field label="Type">
+          <div className="flex gap-2">
+            <Chip active={type === 'percent'} onClick={() => setType('percent')}>Percent</Chip>
+            <Chip active={type === 'fixed'} onClick={() => setType('fixed')}>AED</Chip>
+          </div>
+        </Field>
+        <Field label={type === 'percent' ? 'Discount %' : 'Discount AED'}><Input type="number" value={value} onChange={(e) => setValue(Number(e.target.value))} /></Field>
+        <Field label="Min order (AED)"><Input type="number" value={min} onChange={(e) => setMin(Number(e.target.value))} /></Field>
+        <Button onClick={add}>Add code</Button>
       </div>
-      {promos.map((p) => (
-        <div key={p.id} className="flex items-center gap-3 rounded-lg border bg-card p-2 text-sm">
-          <span className="flex-1 font-mono">{p.code} · {p.type === 'percent' ? `${p.value}%` : `AED ${p.value}`} · min {p.min_order}</span>
-          <Switch checked={p.active} onCheckedChange={(a) => void setPromoActive(p.id, a).then(() => listPromos().then(setPromos))} />
-          <Button size="icon" variant="destructive" className="size-8" onClick={() => void deletePromo(p.id).then(() => listPromos().then(setPromos))}><Trash2 className="size-4" /></Button>
-        </div>
-      ))}
-    </Block>
-  );
-}
 
-function Block({ title, children }: { title: string; children: React.ReactNode }) {
-  return <section className="space-y-3 rounded-xl border bg-card p-5"><h3 className="text-lg font-bold">{title}</h3>{children}</section>;
-}
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <div className="space-y-1"><Label>{label}</Label>{children}</div>;
+      {promos === null ? <Skeleton className="h-12" /> : promos.length === 0 ? (
+        <p className="rounded-[var(--radius)] border border-dashed p-4 text-center text-sm text-muted-foreground">No promo codes yet.</p>
+      ) : (
+        <div className="divide-y rounded-[var(--radius)] border">
+          {promos.map((p) => (
+            <div key={p.id} className="flex items-center gap-3 px-3 py-2 text-sm">
+              <span className="rounded bg-secondary px-2 py-0.5 font-mono font-semibold text-secondary-foreground">{p.code}</span>
+              <span className="min-w-0 flex-1 truncate text-muted-foreground">{p.type === 'percent' ? `${p.value}% off` : `AED ${p.value} off`} · min AED {p.min_order}</span>
+              <Switch checked={p.active} aria-label="Active" onCheckedChange={(a) => void act(setPromoActive(p.id, a))} />
+              <Button size="icon" variant="ghost" className="size-8 text-destructive hover:text-destructive" aria-label="Delete code" onClick={() => void act(deletePromo(p.id), 'Promo code deleted')}><Trash2 className="size-4" /></Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
+  );
 }
