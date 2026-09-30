@@ -1,77 +1,33 @@
-import { useState } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
-import { Languages, Menu as MenuIcon, X } from 'lucide-react';
-import { Button } from '@/components/ui/button.tsx';
-import CartDrawer from '@/components/cart-drawer.tsx';
-import Logo from '@/components/logo.tsx';
+import { Link, Outlet } from 'react-router-dom';
 import { useLang } from '@/components/providers/lang.tsx';
-import { useSetTheme, useSettings } from '@/components/providers/settings.tsx';
-import { updateSettings } from '@/lib/db.ts';
-import { THEMES } from '@/lib/themes.ts';
+import { useSettings } from '@/components/providers/settings.tsx';
+import { ClassicHeader, DrawerHeader, EditorialHeader, SlimHeader } from '@/components/nav/headers.tsx';
+import MobileTabs from '@/components/nav/mobile-tabs.tsx';
+import { useNavLinks } from '@/components/nav/use-nav-links.ts';
+import { THEME_NAV, hasTabBar } from '@/lib/theme-nav.ts';
 import { cn } from '@/lib/utils.ts';
-import { useAdminStatus } from '@/hooks/use-admin.ts';
 
 const DEMO = import.meta.env.VITE_DEMO_MODE === 'true';
 
+// Each theme has its own navigation pattern (see lib/theme-nav.ts)
 export default function SiteLayout() {
-  const { t, lang, setLang } = useLang();
+  const { t } = useLang();
   const s = useSettings();
-  const [open, setOpen] = useState(false);
-  const status = useAdminStatus();
-  const setTheme = useSetTheme();
-
-  const switchTheme = (id: string) => {
-    setTheme(id);
-    if (status?.isAdmin) void updateSettings({ theme: id });
-  };
-
-  const links = [
-    { to: '/', label: t('Home', 'الرئيسية') },
-    { to: '/menu', label: t('Menu', 'القائمة') },
-    { to: '/order', label: t('Home Delivery', 'توصيل للمنزل') },
-    { to: '/table', label: t('Table Order', 'طلب الطاولة') },
-    { to: '/book', label: t('Book a Table', 'حجز طاولة') },
-    { to: '/gallery', label: t('Gallery', 'المعرض') },
-    { to: '/about', label: t('About', 'من نحن') },
-    { to: '/contact', label: t('Contact', 'اتصل بنا') },
-  ];
+  const links = useNavLinks();
+  const style = THEME_NAV[s.theme as keyof typeof THEME_NAV] ?? THEME_NAV['theme-1'];
+  const tabs = hasTabBar(style.nav);
   const { phone, whatsapp, address, openingHours } = s.content;
 
   return (
-    <div className="flex min-h-svh flex-col">
-      <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-          <Link to="/" className="flex items-center gap-2">
-            <Logo />
-            <span className="text-lg font-bold leading-tight">{s.restaurant_name}</span>
-          </Link>
-          <nav className="ml-auto hidden items-center gap-1 xl:flex">
-            {links.map((l) => (
-              <NavLink key={l.to} to={l.to} end={l.to === '/'} className={({ isActive }) => cn('rounded-md px-3 py-2 text-sm hover:bg-secondary', isActive && 'bg-secondary font-semibold text-primary')}>{l.label}</NavLink>
-            ))}
-          </nav>
-          <div className="ml-auto flex items-center gap-2 xl:ml-2">
-            <Button size="sm" variant="secondary" onClick={() => setLang(lang === 'en' ? 'ar' : 'en')}>
-              <Languages className="size-4" />{lang === 'en' ? 'العربية' : 'EN'}
-            </Button>
-            <CartDrawer />
-            <Button size="icon" variant="secondary" className="xl:hidden" onClick={() => setOpen(!open)} aria-label="Menu">
-              {open ? <X className="size-4" /> : <MenuIcon className="size-4" />}
-            </Button>
-          </div>
-        </div>
-        {open && (
-          <nav className="border-t px-4 py-2 xl:hidden">
-            {links.map((l) => (
-              <NavLink key={l.to} to={l.to} end={l.to === '/'} onClick={() => setOpen(false)} className="block rounded-md px-3 py-3 text-sm hover:bg-secondary">{l.label}</NavLink>
-            ))}
-          </nav>
-        )}
-      </header>
+    <div className={cn('flex min-h-svh flex-col', tabs && 'pb-24 xl:pb-0')}>
+      {style.nav === 'classic' && <ClassicHeader links={links} />}
+      {style.nav === 'editorial' && <EditorialHeader links={links} />}
+      {style.nav === 'drawer' && <DrawerHeader links={links} />}
+      {tabs && <SlimHeader links={links} />}
 
       <main className="flex-1"><Outlet /></main>
 
-      <footer className="mt-12 border-t bg-secondary/50">
+      <footer className={cn('mt-12', style.footer)}>
         <div className="mx-auto grid max-w-6xl gap-6 px-4 py-10 sm:grid-cols-3">
           <div>
             <p className="text-lg font-bold">{s.restaurant_name}</p>
@@ -94,12 +50,7 @@ export default function SiteLayout() {
         </div>
       </footer>
 
-      {/* Scrolls sideways on small screens so no theme button is cut off */}
-      <div className="fixed bottom-4 left-4 z-50 flex max-w-[calc(100vw-2rem)] gap-1 overflow-x-auto rounded-full border bg-card p-1 shadow-lg">
-        {THEMES.map((th) => (
-          <button key={th.id} onClick={() => switchTheme(th.id)} className={cn('shrink-0 cursor-pointer whitespace-nowrap rounded-full px-3 py-1 text-xs', s.theme === th.id ? 'bg-primary text-primary-foreground' : 'hover:bg-secondary')}>{th.label}</button>
-        ))}
-      </div>
+      {tabs && <MobileTabs links={links} variant={style.nav === 'dock' ? 'dock' : 'bar'} />}
     </div>
   );
 }
