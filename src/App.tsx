@@ -27,7 +27,8 @@ export default function App() {
                 <Route element={<SiteLayout />}>
                   <Route path="/" element={<Index />} />
                   <Route path="/menu" element={<MenuPage />} />
-                  <Route path="/order" element={<MenuPage orderMode />} />
+                  <Route path="/order" element={<MenuPage channel="delivery" />} />
+                  <Route path="/table" element={<MenuPage channel="dine_in" />} />
                   <Route path="/checkout" element={<CheckoutPage />} />
                   <Route path="/track/:orderNo" element={<TrackPage />} />
                   <Route path="/book" element={<BookPage />} />
