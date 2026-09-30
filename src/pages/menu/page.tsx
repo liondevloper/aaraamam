@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Truck, UtensilsCrossed } from 'lucide-react';
+import { Motorbike, Search, UtensilsCrossed } from 'lucide-react';
 import type { Category, MenuItem } from '@/lib/db.ts';
 import { listCategories, listItems } from '@/lib/db.ts';
 import { Input } from '@/components/ui/input.tsx';
@@ -64,13 +64,13 @@ export default function MenuPage({ channel }: { channel?: Channel }) {
     document.getElementById(`cat-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const title = channel === 'dine_in' ? t('Order at Your Table', 'اطلب على طاولتك') : channel === 'delivery' ? t('Home Delivery & Pickup', 'توصيل واستلام') : t('Our Menu', 'قائمتنا');
+  const title = channel === 'dine_in' ? t('Order at Your Table', 'اطلب على طاولتك') : channel === 'delivery' ? t('Order Now', 'اطلب الآن') : t('Our Menu', 'قائمتنا');
   const hint = channel === 'dine_in'
     ? t('Dine-in menu. Add dishes and send the order straight to the kitchen.', 'قائمة داخل المطعم. أضف الأطباق وأرسل الطلب للمطبخ مباشرة.')
     : channel === 'delivery'
-      ? t('Delivery menu. Add dishes, then choose delivery or pickup at checkout.', 'قائمة التوصيل. أضف الأطباق ثم اختر التوصيل أو الاستلام.')
+      ? t('Add your dishes and we will deliver them to your door.', 'أضف أطباقك وسنوصلها إلى باب منزلك.')
       : null;
-  const Icon = channel === 'dine_in' ? UtensilsCrossed : Truck;
+  const Icon = channel === 'dine_in' ? UtensilsCrossed : Motorbike;
   const centered = look.head.includes('text-center');
 
   return (
