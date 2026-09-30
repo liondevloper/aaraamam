@@ -24,6 +24,7 @@ import OrdersTab from './_components/orders-tab.tsx';
 import SettingsTab from './_components/settings-tab.tsx';
 import StatsBar from './_components/stats-bar.tsx';
 
+// Developer logo is shown only on the login / access screens, not inside the panel
 const LION_LOGO = 'https://hercules-cdn.com/file_YhLYv39scgdutD2CYKbozlog';
 
 const TABS = [
@@ -166,12 +167,9 @@ function Dashboard({ themeId, onTheme }: ThemeProps) {
     <div className="flex min-h-svh">
       {/* Desktop sidebar */}
       <aside className="sticky top-0 hidden h-svh w-64 shrink-0 flex-col gap-6 border-r bg-card p-4 text-card-foreground md:flex">
-        <div className="flex items-center gap-3 px-2">
-          <img src={LION_LOGO} alt="" className="size-10 object-contain" />
-          <div className="min-w-0">
-            <p className="truncate font-bold leading-tight">Aaraamam</p>
-            <p className="text-xs text-muted-foreground">Restaurant control panel</p>
-          </div>
+        <div className="px-2">
+          <p className="truncate text-lg font-bold leading-tight">Aaraamam</p>
+          <p className="text-xs text-muted-foreground">Restaurant control panel</p>
         </div>
         <nav className="flex flex-1 flex-col gap-1">
           {TABS.map(({ value, label, icon: Icon }) => {
@@ -202,7 +200,6 @@ function Dashboard({ themeId, onTheme }: ThemeProps) {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex items-center gap-2 border-b bg-background/90 px-4 py-3 backdrop-blur md:px-8">
-          <img src={LION_LOGO} alt="" className="size-8 object-contain md:hidden" />
           <div className="mr-auto min-w-0">
             <h1 className="truncate text-lg font-bold leading-tight">{current.label}</h1>
             <StorePill onClick={() => go('dashboard')} />
