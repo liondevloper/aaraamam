@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, Palette } from "lucide-react";
-import { Button } from "@/components/ui/button.tsx";
 import { useSetTheme, useSettings } from "@/components/providers/settings.tsx";
 import { updateSettings } from "@/lib/db.ts";
 import { THEMES, type ThemeId } from "@/lib/themes.ts";
@@ -8,7 +7,8 @@ import { THEME_NAV } from "@/lib/theme-nav.ts";
 import { useAdminStatus } from "@/hooks/use-admin.ts";
 import { cn } from "@/lib/utils.ts";
 
-// Palette button that opens a small theme list. Every theme also changes the navigation layout.
+// Floating theme button, always in the same corner in every theme.
+// Sits above the mobile tab bar / dock, and in the corner on desktop.
 export default function ThemePicker() {
   const s = useSettings();
   const setTheme = useSetTheme();
@@ -16,7 +16,7 @@ export default function ThemePicker() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Close when tapping anywhere outside (no full-screen backdrop: sticky headers trap fixed children)
+  // Close when tapping anywhere outside
   useEffect(() => {
     if (!open) return;
     const onDown = (e: PointerEvent) => {
@@ -33,12 +33,18 @@ export default function ThemePicker() {
   };
 
   return (
-    <div ref={ref} className="relative">
-      <Button size="icon" variant="secondary" aria-label="Change theme" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <Palette className="size-4" />
-      </Button>
+    <div ref={ref} className="fixed bottom-24 right-4 z-40 xl:bottom-6">
+      <button
+        type="button"
+        aria-label="Change theme"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="grid size-12 cursor-pointer place-items-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform active:scale-95"
+      >
+        <Palette className="size-5" />
+      </button>
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-60 rounded-[var(--radius)] border bg-popover p-1.5 text-popover-foreground shadow-xl">
+        <div className="absolute bottom-full right-0 mb-2 w-60 rounded-[var(--radius)] border bg-popover p-1.5 text-popover-foreground shadow-xl">
           {THEMES.map((th) => (
             <button
               key={th.id}
