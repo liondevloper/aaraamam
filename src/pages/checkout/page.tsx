@@ -9,11 +9,13 @@ import { Label } from '@/components/ui/label.tsx';
 import { Textarea } from '@/components/ui/textarea.tsx';
 import { Spinner } from '@/components/ui/spinner.tsx';
 import MapView from '@/components/map-view.tsx';
+import PageHeading from '@/components/page-heading.tsx';
 import { useCart } from '@/components/providers/cart.tsx';
 import { useLang } from '@/components/providers/lang.tsx';
 import { useSettings } from '@/components/providers/settings.tsx';
 import { money, reverseGeocode } from '@/lib/format.ts';
 import { haversineKm } from '@/lib/geo.ts';
+import { getLook } from '@/lib/theme-look.ts';
 import { cn } from '@/lib/utils.ts';
 
 function errorText(e: unknown, fallback: string): string {
@@ -24,6 +26,7 @@ function errorText(e: unknown, fallback: string): string {
 export default function CheckoutPage() {
   const { t, lang } = useLang();
   const s = useSettings();
+  const look = getLook(s.theme);
   const cart = useCart();
   const navigate = useNavigate();
   const d = s.delivery;
@@ -119,10 +122,10 @@ export default function CheckoutPage() {
   return (
     <div className="mx-auto grid max-w-5xl gap-8 px-4 py-8 lg:grid-cols-[1fr_360px]">
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">{dineIn ? t('Send order to kitchen', 'أرسل الطلب للمطبخ') : t('Checkout', 'إتمام الطلب')}</h1>
+        <PageHeading className="mb-0">{dineIn ? t('Send order to kitchen', 'أرسل الطلب للمطبخ') : t('Checkout', 'إتمام الطلب')}</PageHeading>
 
         {dineIn ? (
-          <div className="space-y-4 rounded-lg border bg-card p-4">
+          <div className={cn('space-y-4', look.panel)}>
             <p className="flex items-center gap-2 font-medium"><UtensilsCrossed className="size-4 text-primary" />{t('Dine-in order', 'طلب داخل المطعم')}</p>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2"><Label>{t('Table number', 'رقم الطاولة')}</Label><Input value={cart.table.tableNo} onChange={(e) => cart.setTable({ tableNo: e.target.value })} placeholder="5" inputMode="numeric" /></div>
@@ -131,7 +134,7 @@ export default function CheckoutPage() {
             <p className="text-xs text-muted-foreground">{t('Pay at the table after your meal.', 'ادفع على الطاولة بعد الوجبة.')}</p>
           </div>
         ) : (
-          <p className="flex items-center gap-2 rounded-lg border bg-card p-4 font-medium"><Motorbike className="size-5 text-primary" />{t('Home delivery', 'توصيل للمنزل')}</p>
+          <p className={cn('flex items-center gap-2 font-medium', look.panel)}><Motorbike className="size-5 text-primary" />{t('Home delivery', 'توصيل للمنزل')}</p>
         )}
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -147,7 +150,7 @@ export default function CheckoutPage() {
                   <Label>{t('Drop the pin at your location', 'ضع الدبوس على موقعك')}</Label>
                   <Button size="sm" variant="secondary" onClick={useMyLocation}><LocateFixed className="size-4" />{t('Use my location', 'استخدم موقعي')}</Button>
                 </div>
-                <MapView center={[d.lat, d.lng]} zoom={14} pin={pin} onPinChange={(la, ln) => void movePin(la, ln)} className="h-72 w-full rounded-lg" />
+                <MapView center={[d.lat, d.lng]} zoom={14} pin={pin} onPinChange={(la, ln) => void movePin(la, ln)} className={cn('h-72 w-full', look.photo)} />
               </div>
             )}
             <div className="space-y-2"><Label>{t('Address', 'العنوان')}</Label><Textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={2} /></div>
@@ -164,10 +167,10 @@ export default function CheckoutPage() {
         )}
 
         <div className="space-y-2"><Label>{t('Order notes', 'ملاحظات الطلب')}</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} /></div>
-        {!dineIn && <div className="rounded-lg border bg-card p-4 text-sm font-medium">{t('Payment: Cash on Delivery', 'الدفع: نقدًا عند الاستلام')}</div>}
+        {!dineIn && <div className={cn('text-sm font-medium', look.panel)}>{t('Payment: Cash on Delivery', 'الدفع: نقدًا عند الاستلام')}</div>}
       </div>
 
-      <aside className="h-fit space-y-4 rounded-[var(--radius)] border bg-card p-5 lg:sticky lg:top-24">
+      <aside className={cn('h-fit space-y-4 lg:sticky lg:top-24', look.panel, 'p-5')}>
         <h2 className="text-lg font-bold">{t('Summary', 'الملخص')}</h2>
         {cart.lines.map((l) => (
           <div key={l.key} className="flex justify-between gap-2 text-sm"><span>{l.qty} × {l.name}{l.variantLabel ? ` (${l.variantLabel})` : ''}</span><span>{money(l.price * l.qty)}</span></div>
