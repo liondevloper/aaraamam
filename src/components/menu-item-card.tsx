@@ -8,6 +8,7 @@ import type { Channel } from '@/components/providers/cart.tsx';
 import { useCart } from '@/components/providers/cart.tsx';
 import { useLang } from '@/components/providers/lang.tsx';
 import { useSettings } from '@/components/providers/settings.tsx';
+import { dishImage } from '@/lib/fallback-images.ts';
 import { money } from '@/lib/format.ts';
 import { getLook, type CardStyle } from '@/lib/theme-look.ts';
 import { cn } from '@/lib/utils.ts';
@@ -126,14 +127,8 @@ export default function MenuItemCard({ item, channel }: { item: MenuItem; channe
     <span className="text-xs text-muted-foreground">{t('Dine-in only', 'داخل المطعم فقط')}</span>
   ) : null;
 
-  const parts: Parts = { name, description: item.description_en, image: item.image_url, available: item.available, variants: variantChips, price: priceText, action };
+  // Dishes without an uploaded photo get a matching default one, so no card looks empty
+  const parts: Parts = { name, description: item.description_en, image: dishImage(item), available: item.available, variants: variantChips, price: priceText, action };
 
-  if (item.image_url) return <CardBody style={look.card} p={parts} />;
-  return (
-    <div className="space-y-2 rounded-[var(--radius)] border bg-card p-3">
-      <p className="font-medium">{name}</p>
-      {variantChips}
-      <div className="flex items-center justify-between gap-2">{priceText}{action}</div>
-    </div>
-  );
+  return <CardBody style={look.card} p={parts} />;
 }
