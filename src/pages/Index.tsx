@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bike, CalendarDays, Clock, MapPin, UtensilsCrossed } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, Motorbike, UtensilsCrossed } from 'lucide-react';
 import { motion } from 'motion/react';
 import type { Category, MenuItem } from '@/lib/db.ts';
 import { listCategories, listItems } from '@/lib/db.ts';
@@ -41,7 +41,7 @@ export default function Home() {
     <div className={cn('flex flex-wrap gap-3', (layout === 'centered' || luxe) && 'justify-center')}>
       {s.flags.ordering && (
         <>
-          <Button asChild size="lg"><Link to="/order"><Bike className="size-4" />{t('Order', 'اطلب')}</Link></Button>
+          <Button asChild size="lg"><Link to="/order"><Motorbike className="size-4" />{t('Order Now', 'اطلب الآن')}</Link></Button>
           <Button asChild size="lg" variant="secondary"><Link to="/table"><UtensilsCrossed className="size-4" />{t('Order at Table', 'اطلب على الطاولة')}</Link></Button>
         </>
       )}
