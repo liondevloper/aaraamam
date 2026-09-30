@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { CalendarDays, Check, Palette, Send, Tag, ToggleRight, Trash2, Truck } from 'lucide-react';
 import type { Settings, SettingsPrivate, Promo } from '@/lib/db.ts';
@@ -186,13 +186,16 @@ function PromoBlock() {
   const [value, setValue] = useState(10);
   const [min, setMin] = useState(0);
 
-  const load = () => listPromos().then(setPromos).catch(() => setPromos((p) => p ?? []));
-  useEffect(() => { void load(); }, []);
+  const load = useCallback(() => listPromos().then(setPromos).catch(() => setPromos((p) => p ?? [])), []);
+  useEffect(() => { void load(); }, [load]);
 
   const act = (p: Promise<void>, ok?: string) => p.then(() => { if (ok) toast.success(ok); return load(); }).catch((e: unknown) => { toast.error(errMsg(e)); });
 
   const add = () => {
-    if (!code.trim()) return toast.error('Enter a code');
+    if (!code.trim()) {
+      toast.error('Enter a code');
+      return;
+    }
     void act(createPromo({ code, type, value, minOrder: min }).then(() => setCode('')), 'Promo code added');
   };
 
