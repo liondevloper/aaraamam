@@ -9,27 +9,26 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: C
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn('p-3', className)}
+      className={cn('w-fit p-3', className)}
       classNames={{
-        months: 'flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0',
+        months: 'relative flex flex-col gap-4 sm:flex-row',
         month: 'space-y-4',
-        caption: 'flex justify-center pt-1 relative items-center',
+        month_caption: 'flex h-8 items-center justify-center',
         caption_label: 'text-sm font-medium',
-        nav: 'space-x-1 flex items-center',
-        nav_button: cn(buttonVariants({ variant: 'secondary', size: 'icon' }), 'h-7 w-7 opacity-50 hover:opacity-100'),
-        nav_button_previous: 'absolute left-1',
-        nav_button_next: 'absolute right-1',
-        table: 'w-full border-collapse space-y-1',
-        head_row: 'flex',
-        head_cell: 'text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]',
-        row: 'flex w-full mt-2',
-        cell: 'relative p-0 text-center text-sm focus-within:relative focus-within:z-20',
-        day: cn(buttonVariants({ variant: 'ghost' }), 'h-8 w-8 p-0 font-normal aria-selected:opacity-100'),
-        day_selected: 'bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
-        day_today: 'bg-accent text-accent-foreground',
-        day_outside: 'text-muted-foreground opacity-50',
-        day_disabled: 'text-muted-foreground opacity-50',
-        day_hidden: 'invisible',
+        nav: 'absolute inset-x-0 top-0 flex items-center justify-between',
+        button_previous: cn(buttonVariants({ variant: 'secondary', size: 'icon' }), 'size-8 opacity-70 hover:opacity-100'),
+        button_next: cn(buttonVariants({ variant: 'secondary', size: 'icon' }), 'size-8 opacity-70 hover:opacity-100'),
+        month_grid: 'w-full border-collapse',
+        weekdays: 'flex',
+        weekday: 'w-9 text-[0.8rem] font-normal text-muted-foreground',
+        week: 'mt-2 flex w-full',
+        day: 'relative size-9 p-0 text-center text-sm',
+        day_button: cn(buttonVariants({ variant: 'ghost' }), 'size-9 cursor-pointer p-0 font-normal'),
+        selected: '[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary',
+        today: '[&>button]:bg-accent [&>button]:text-accent-foreground',
+        outside: 'text-muted-foreground opacity-50',
+        disabled: 'text-muted-foreground opacity-40 [&>button]:cursor-not-allowed',
+        hidden: 'invisible',
         ...classNames,
       }}
       {...props}
