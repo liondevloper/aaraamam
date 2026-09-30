@@ -158,31 +158,90 @@ export const THEMES: ThemeDef[] = [
   },
 ];
 
-// The admin panel has its own fixed look, so visitor theme picks never change it.
-export const ADMIN_THEME: Pick<ThemeDef, "font" | "vars"> = {
-  font: "'Geist', ui-sans-serif, system-ui, sans-serif",
-  vars: {
-    "--radius": "0.625rem",
-    "--background": "oklch(0.985 0.002 250)",
-    "--foreground": "oklch(0.21 0.02 260)",
-    "--card": "oklch(1 0 0)",
-    "--card-foreground": "oklch(0.21 0.02 260)",
-    "--popover": "oklch(1 0 0)",
-    "--popover-foreground": "oklch(0.21 0.02 260)",
-    "--primary": "oklch(0.45 0.18 265)",
-    "--primary-foreground": "oklch(0.985 0 0)",
-    "--secondary": "oklch(0.96 0.008 260)",
-    "--secondary-foreground": "oklch(0.25 0.03 260)",
-    "--muted": "oklch(0.96 0.008 260)",
-    "--muted-foreground": "oklch(0.52 0.02 260)",
-    "--accent": "oklch(0.94 0.02 265)",
-    "--accent-foreground": "oklch(0.25 0.05 265)",
-    "--destructive": "oklch(0.577 0.245 27.325)",
-    "--border": "oklch(0.92 0.006 260)",
-    "--input": "oklch(0.92 0.006 260)",
-    "--ring": "oklch(0.45 0.18 265)",
-  },
+// ── Admin panel themes ───────────────────────────────────────────────────────
+// The admin panel never follows the visitor theme above. Admins pick one of these
+// two premium looks instead (persisted locally per browser/device).
+export type AdminLayoutId = "classic" | "midnight";
+
+export type AdminThemeDef = {
+  id: AdminLayoutId;
+  label: string;
+  description: string;
+  /** Structural chrome, not just colors: "topnav" (classic) or "sidebar" (midnight) */
+  nav: "topnav" | "sidebar";
+  font: string;
+  vars: Record<string, string>;
 };
+
+export const ADMIN_THEMES: AdminThemeDef[] = [
+  {
+    id: "classic",
+    label: "Classic",
+    description: "Clean light dashboard with a top bar",
+    nav: "topnav",
+    font: "'Geist', ui-sans-serif, system-ui, sans-serif",
+    vars: {
+      "--radius": "0.625rem",
+      "--background": "oklch(0.985 0.002 250)",
+      "--foreground": "oklch(0.21 0.02 260)",
+      "--card": "oklch(1 0 0)",
+      "--card-foreground": "oklch(0.21 0.02 260)",
+      "--popover": "oklch(1 0 0)",
+      "--popover-foreground": "oklch(0.21 0.02 260)",
+      "--primary": "oklch(0.45 0.18 265)",
+      "--primary-foreground": "oklch(0.985 0 0)",
+      "--secondary": "oklch(0.96 0.008 260)",
+      "--secondary-foreground": "oklch(0.25 0.03 260)",
+      "--muted": "oklch(0.96 0.008 260)",
+      "--muted-foreground": "oklch(0.52 0.02 260)",
+      "--accent": "oklch(0.94 0.02 265)",
+      "--accent-foreground": "oklch(0.25 0.05 265)",
+      "--destructive": "oklch(0.577 0.245 27.325)",
+      "--border": "oklch(0.92 0.006 260)",
+      "--input": "oklch(0.92 0.006 260)",
+      "--ring": "oklch(0.45 0.18 265)",
+    },
+  },
+  {
+    // Premium: near-black slate with a champagne-gold accent and a left sidebar
+    id: "midnight",
+    label: "Midnight Pro",
+    description: "Premium dark dashboard with a side panel",
+    nav: "sidebar",
+    font: "'Manrope', ui-sans-serif, system-ui, sans-serif",
+    vars: {
+      "--radius": "0.75rem",
+      "--background": "oklch(0.16 0.012 265)",
+      "--foreground": "oklch(0.95 0.006 260)",
+      "--card": "oklch(0.205 0.014 265)",
+      "--card-foreground": "oklch(0.95 0.006 260)",
+      "--popover": "oklch(0.205 0.014 265)",
+      "--popover-foreground": "oklch(0.95 0.006 260)",
+      "--primary": "oklch(0.78 0.13 85)",
+      "--primary-foreground": "oklch(0.16 0.012 265)",
+      "--secondary": "oklch(0.26 0.016 265)",
+      "--secondary-foreground": "oklch(0.92 0.01 260)",
+      "--muted": "oklch(0.24 0.014 265)",
+      "--muted-foreground": "oklch(0.68 0.015 260)",
+      "--accent": "oklch(0.3 0.03 265)",
+      "--accent-foreground": "oklch(0.95 0.006 260)",
+      "--destructive": "oklch(0.65 0.2 25)",
+      "--border": "oklch(0.78 0.13 85 / 16%)",
+      "--input": "oklch(0.78 0.13 85 / 20%)",
+      "--ring": "oklch(0.78 0.13 85)",
+    },
+  },
+];
+
+export function getAdminTheme(id: string): AdminThemeDef {
+  return ADMIN_THEMES.find((t) => t.id === id) ?? ADMIN_THEMES[0];
+}
+
+export function applyAdminTheme(def: AdminThemeDef): void {
+  const root = document.documentElement;
+  for (const [k, val] of Object.entries(def.vars)) root.style.setProperty(k, val);
+  document.body.style.fontFamily = def.font;
+}
 
 export function applyTheme(def: Pick<ThemeDef, "font" | "vars">): void {
   const root = document.documentElement;
