@@ -158,7 +158,33 @@ export const THEMES: ThemeDef[] = [
   },
 ];
 
-export function applyTheme(def: ThemeDef): void {
+// The admin panel has its own fixed look, so visitor theme picks never change it.
+export const ADMIN_THEME: Pick<ThemeDef, "font" | "vars"> = {
+  font: "'Geist', ui-sans-serif, system-ui, sans-serif",
+  vars: {
+    "--radius": "0.625rem",
+    "--background": "oklch(0.985 0.002 250)",
+    "--foreground": "oklch(0.21 0.02 260)",
+    "--card": "oklch(1 0 0)",
+    "--card-foreground": "oklch(0.21 0.02 260)",
+    "--popover": "oklch(1 0 0)",
+    "--popover-foreground": "oklch(0.21 0.02 260)",
+    "--primary": "oklch(0.45 0.18 265)",
+    "--primary-foreground": "oklch(0.985 0 0)",
+    "--secondary": "oklch(0.96 0.008 260)",
+    "--secondary-foreground": "oklch(0.25 0.03 260)",
+    "--muted": "oklch(0.96 0.008 260)",
+    "--muted-foreground": "oklch(0.52 0.02 260)",
+    "--accent": "oklch(0.94 0.02 265)",
+    "--accent-foreground": "oklch(0.25 0.05 265)",
+    "--destructive": "oklch(0.577 0.245 27.325)",
+    "--border": "oklch(0.92 0.006 260)",
+    "--input": "oklch(0.92 0.006 260)",
+    "--ring": "oklch(0.45 0.18 265)",
+  },
+};
+
+export function applyTheme(def: Pick<ThemeDef, "font" | "vars">): void {
   const root = document.documentElement;
   for (const [k, val] of Object.entries(def.vars)) root.style.setProperty(k, val);
   document.body.style.fontFamily = def.font;
