@@ -4,6 +4,8 @@ import { toast } from 'sonner';
 import { claimAdmin } from '@/lib/db.ts';
 import { supabase } from '@/lib/supabase.ts';
 import { Button } from '@/components/ui/button.tsx';
+import { Input } from '@/components/ui/input.tsx';
+import { Label } from '@/components/ui/label.tsx';
 import { Skeleton } from '@/components/ui/skeleton.tsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx';
 import { useAdminStatus } from '@/hooks/use-admin.ts';
@@ -29,14 +31,60 @@ export default function AdminPage() {
 
 function Gate() {
   const status = useAdminStatus();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const signInEmail = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) toast.error(error.message);
+  };
 
   if (!status) return <Skeleton className="h-40" />;
   if (status.isAdmin) return <Dashboard />;
   if (!status.signedIn) {
     return (
-      <div className="mx-auto max-w-sm space-y-4 rounded-xl border bg-card p-8 text-center">
-        <p>Sign in to manage the restaurant.</p>
-        <Button onClick={() => void supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } })}>
+      <div className="mx-auto max-w-sm space-y-5 rounded-xl border bg-card p-8">
+        <p className="text-center font-semibold">Sign in to manage the restaurant</p>
+
+        {/* Email / Password login */}
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label>Email</Label>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Password</Label>
+            <Input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              onKeyDown={(e) => e.key === 'Enter' && void signInEmail()}
+            />
+          </div>
+          <Button className="w-full" disabled={loading || !email || !password} onClick={() => void signInEmail()}>
+            {loading ? 'Signing in…' : 'Sign in'}
+          </Button>
+        </div>
+
+        <div className="relative flex items-center gap-3 text-xs text-muted-foreground">
+          <div className="flex-1 border-t" />or<div className="flex-1 border-t" />
+        </div>
+
+        {/* Google login */}
+        <Button
+          variant="secondary"
+          className="w-full"
+          onClick={() => void supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } })}
+        >
           Sign in with Google
         </Button>
       </div>
