@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button.tsx";
@@ -10,11 +10,11 @@ import { useSettings } from "@/components/providers/settings.tsx";
 import { money } from "@/lib/format.ts";
 
 export default function CartDrawer() {
-  const { lines, count, subtotal, setQty } = useCart();
+  const { lines, count, subtotal, setQty, channel } = useCart();
   const { t } = useLang();
   const settings = useSettings();
   const [open, setOpen] = useState(false);
-  const canOrder = useMemo(() => settings.flags.ordering, [settings]);
+  const dine = channel === "dine_in";
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -29,14 +29,14 @@ export default function CartDrawer() {
       </SheetTrigger>
       <SheetContent className="flex w-full flex-col sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>{t("Your order", "طلبك")}</SheetTitle>
+          <SheetTitle>{dine ? t("Table order", "طلب الطاولة") : t("Home order", "طلب المنزل")}</SheetTitle>
         </SheetHeader>
         {lines.length === 0 ? (
           <Empty>
             <EmptyHeader>
               <EmptyMedia variant="icon"><ShoppingBag /></EmptyMedia>
               <EmptyTitle>{t("Your cart is empty", "السلة فارغة")}</EmptyTitle>
-              <EmptyDescription>{t("Add dishes from the Order page.", "أضف أطباقًا من صفحة الطلب.")}</EmptyDescription>
+              <EmptyDescription>{t("Add dishes from the Home Delivery or Table Order menu.", "أضف أطباقًا من قائمة التوصيل أو الطاولة.")}</EmptyDescription>
             </EmptyHeader>
           </Empty>
         ) : (
@@ -67,9 +67,9 @@ export default function CartDrawer() {
                 <span>{t("Subtotal", "المجموع الفرعي")}</span>
                 <span>{money(subtotal)}</span>
               </div>
-              {canOrder ? (
+              {settings.flags.ordering ? (
                 <Button asChild className="w-full" onClick={() => setOpen(false)}>
-                  <Link to="/checkout">{t("Checkout", "إتمام الطلب")}</Link>
+                  <Link to="/checkout">{dine ? t("Send to kitchen", "أرسل للمطبخ") : t("Checkout", "إتمام الطلب")}</Link>
                 </Button>
               ) : (
                 <p className="text-center text-sm text-muted-foreground">
