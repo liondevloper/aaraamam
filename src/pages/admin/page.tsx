@@ -22,12 +22,6 @@ export default function AdminPage() {
   useAdminTheme();
   return (
     <div className="mx-auto min-h-svh max-w-6xl px-4 py-6">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Aaraamam Admin</h1>
-        <div className="flex gap-2">
-          <Button asChild variant="secondary"><Link to="/">View site</Link></Button>
-        </div>
-      </div>
       <Gate />
     </div>
   );
@@ -50,18 +44,19 @@ function Gate() {
   if (status.isAdmin) return <Dashboard />;
   if (!status.signedIn) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center">
+      <div className="flex min-h-[90vh] items-center justify-center">
         <div className="w-full max-w-sm space-y-5 rounded-2xl border bg-card p-8 shadow-sm">
-          {/* Lion Developer Logo */}
-          <div className="flex justify-center">
+          {/* Lion Developer Logo + Aaraamam name */}
+          <div className="flex flex-col items-center gap-2">
             <img
               src={LION_LOGO}
               alt="Lion Developer"
               className="h-28 w-28 object-contain"
             />
+            <h1 className="text-2xl font-bold tracking-wide">Aaraamam</h1>
           </div>
 
-          <p className="text-center font-semibold text-lg">Sign in to manage the restaurant</p>
+          <p className="text-center text-sm text-muted-foreground">Sign in to manage the restaurant</p>
 
           {/* Email / Password login */}
           <div className="space-y-3">
@@ -108,21 +103,27 @@ function Gate() {
 function Dashboard() {
   const [tab, setTab] = useState('orders');
   return (
-    <Tabs value={tab} onValueChange={setTab}>
-      <TabsList className="flex-wrap">
-        <TabsTrigger value="orders">Orders</TabsTrigger>
-        <TabsTrigger value="bookings">Bookings</TabsTrigger>
-        <TabsTrigger value="menu">Menu</TabsTrigger>
-        <TabsTrigger value="settings">Settings</TabsTrigger>
-        <TabsTrigger value="content">Content</TabsTrigger>
-      </TabsList>
-      <div className="pt-4">
-        <TabsContent value="orders"><OrdersTab /></TabsContent>
-        <TabsContent value="bookings"><BookingsTab /></TabsContent>
-        <TabsContent value="menu"><MenuTab /></TabsContent>
-        <TabsContent value="settings"><SettingsTab /></TabsContent>
-        <TabsContent value="content"><ContentTab /></TabsContent>
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Aaraamam Admin</h1>
+        <Button asChild variant="secondary"><Link to="/">View site</Link></Button>
       </div>
-    </Tabs>
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="orders">Orders</TabsTrigger>
+          <TabsTrigger value="bookings">Bookings</TabsTrigger>
+          <TabsTrigger value="menu">Menu</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
+          <TabsTrigger value="content">Content</TabsTrigger>
+        </TabsList>
+        <div className="pt-4">
+          <TabsContent value="orders"><OrdersTab /></TabsContent>
+          <TabsContent value="bookings"><BookingsTab /></TabsContent>
+          <TabsContent value="menu"><MenuTab /></TabsContent>
+          <TabsContent value="settings"><SettingsTab /></TabsContent>
+          <TabsContent value="content"><ContentTab /></TabsContent>
+        </div>
+      </Tabs>
+    </div>
   );
 }
