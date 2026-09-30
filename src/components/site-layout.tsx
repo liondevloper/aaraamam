@@ -1,10 +1,13 @@
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useLang } from '@/components/providers/lang.tsx';
 import { useSettings } from '@/components/providers/settings.tsx';
 import { ClassicHeader, DrawerHeader, EditorialHeader, SlimHeader } from '@/components/nav/headers.tsx';
 import MobileTabs from '@/components/nav/mobile-tabs.tsx';
 import ThemePicker from '@/components/nav/theme-picker.tsx';
 import { useNavLinks } from '@/components/nav/use-nav-links.ts';
+import MaintenanceScreen from '@/components/maintenance-screen.tsx';
+import StoreBanner from '@/components/store-banner.tsx';
+import { useStoreStatus } from '@/hooks/use-store-status.ts';
 import { THEME_NAV, hasTabBar } from '@/lib/theme-nav.ts';
 import { cn } from '@/lib/utils.ts';
 
@@ -15,9 +18,14 @@ export default function SiteLayout() {
   const { t } = useLang();
   const s = useSettings();
   const links = useNavLinks();
+  const { status } = useStoreStatus();
+  const { pathname } = useLocation();
   const style = THEME_NAV[s.theme as keyof typeof THEME_NAV] ?? THEME_NAV['theme-1'];
   const tabs = hasTabBar(style.nav);
   const { phone, whatsapp, address, openingHours } = s.content;
+
+  // Customers with a live order can still follow it during maintenance
+  if (status.kind === 'maintenance' && !pathname.startsWith('/track')) return <MaintenanceScreen />;
 
   return (
     <div className={cn('flex min-h-svh flex-col', tabs && 'pb-24 xl:pb-0')}>
@@ -26,6 +34,7 @@ export default function SiteLayout() {
       {style.nav === 'drawer' && <DrawerHeader links={links} />}
       {tabs && <SlimHeader links={links} />}
 
+      <StoreBanner />
       <main className="flex-1"><Outlet /></main>
 
       <footer className={cn('mt-12', style.footer)}>

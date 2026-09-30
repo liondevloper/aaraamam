@@ -8,6 +8,7 @@ import type { Channel } from '@/components/providers/cart.tsx';
 import { useCart } from '@/components/providers/cart.tsx';
 import { useLang } from '@/components/providers/lang.tsx';
 import { useSettings } from '@/components/providers/settings.tsx';
+import { useStoreStatus } from '@/hooks/use-store-status.ts';
 import { dishImage } from '@/lib/fallback-images.ts';
 import { money } from '@/lib/format.ts';
 import { getLook, type CardStyle } from '@/lib/theme-look.ts';
@@ -86,13 +87,14 @@ function CardBody({ style, p }: { style: CardStyle; p: Parts }) {
 export default function MenuItemCard({ item, channel }: { item: MenuItem; channel?: Channel }) {
   const { t, lang } = useLang();
   const s = useSettings();
+  const { canOrder } = useStoreStatus();
   const cart = useCart();
   const variants = item.variants ?? [];
   const [variant, setVariant] = useState(variants[0]?.label);
   const name = lang === 'ar' && item.name_ar ? item.name_ar : item.name_en;
   const price = variants.length > 0 ? variants.find((v) => v.label === variant)?.price : (item.price ?? undefined);
   const orderMode = channel !== undefined;
-  const canAdd = orderMode && s.flags.ordering && item.available && !item.on_request && price !== undefined;
+  const canAdd = orderMode && canOrder && item.available && !item.on_request && price !== undefined;
   const look = getLook(s.theme);
   const dineOnly = !orderMode && item.channels?.length === 1 && item.channels[0] === 'dine_in';
 
@@ -123,6 +125,8 @@ export default function MenuItemCard({ item, channel }: { item: MenuItem; channe
     <span className="text-xs font-medium text-destructive">{t('Sold out', 'نفدت الكمية')}</span>
   ) : canAdd ? (
     <Button size="sm" onClick={add} className="h-8 gap-1"><Plus className="size-4" />{t('Add', 'أضف')}</Button>
+  ) : orderMode && !canOrder ? (
+    <span className="text-xs font-medium text-muted-foreground">{t('Closed now', 'مغلق الآن')}</span>
   ) : dineOnly ? (
     <span className="text-xs text-muted-foreground">{t('Dine-in only', 'داخل المطعم فقط')}</span>
   ) : null;

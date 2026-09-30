@@ -6,13 +6,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty.tsx";
 import { useCart } from "@/components/providers/cart.tsx";
 import { useLang } from "@/components/providers/lang.tsx";
-import { useSettings } from "@/components/providers/settings.tsx";
+import { useStoreStatus } from "@/hooks/use-store-status.ts";
 import { money } from "@/lib/format.ts";
 
 export default function CartDrawer() {
   const { lines, count, subtotal, setQty, channel } = useCart();
   const { t } = useLang();
-  const settings = useSettings();
+  const { canOrder, headline, detail } = useStoreStatus();
   const [open, setOpen] = useState(false);
   const dine = channel === "dine_in";
 
@@ -67,14 +67,15 @@ export default function CartDrawer() {
                 <span>{t("Subtotal", "المجموع الفرعي")}</span>
                 <span>{money(subtotal)}</span>
               </div>
-              {settings.flags.ordering ? (
+              {canOrder ? (
                 <Button asChild className="w-full" onClick={() => setOpen(false)}>
                   <Link to="/checkout">{dine ? t("Send to kitchen", "أرسل للمطبخ") : t("Checkout", "إتمام الطلب")}</Link>
                 </Button>
               ) : (
-                <p className="text-center text-sm text-muted-foreground">
-                  {t("Online ordering is currently closed.", "الطلب عبر الإنترنت مغلق حاليًا.")}
-                </p>
+                <div className="rounded-lg bg-destructive/10 p-3 text-center text-sm">
+                  <p className="font-semibold text-destructive">{headline}</p>
+                  {detail && <p className="text-muted-foreground">{detail}</p>}
+                </div>
               )}
             </div>
           </>
